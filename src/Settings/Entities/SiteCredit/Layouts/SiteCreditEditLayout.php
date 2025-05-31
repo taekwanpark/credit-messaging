@@ -5,6 +5,7 @@ namespace Techigh\CreditMessaging\Settings\Entities\SiteCredit\Layouts;
 use Orchid\Screen\Field;
 use Orchid\Screen\Fields\Input;
 use Orchid\Screen\Fields\CheckBox;
+use Orchid\Screen\Fields\Switcher;
 use Orchid\Screen\Layouts\Rows;
 
 class SiteCreditEditLayout extends Rows
@@ -70,10 +71,11 @@ class SiteCreditEditLayout extends Rows
                 ->placeholder(__('Cost per MMS message'))
                 ->help(__('Cost charged per MMS message')),
 
-            CheckBox::make('siteCredit.auto_charge_enabled')
+            Switcher::make('siteCredit.auto_charge_enabled')
                 ->title(__('Auto Charge Enabled'))
                 ->placeholder(__('Enable automatic charging'))
-                ->help(__('Automatically charge when balance is low')),
+                ->help(__('Automatically charge when balance is low'))
+                ->sendTrueOrFalse(),
 
             Input::make('siteCredit.auto_charge_threshold')
                 ->type('number')

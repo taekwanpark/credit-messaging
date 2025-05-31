@@ -79,7 +79,7 @@ class CreditMessageListScreen extends Screen
     public function permission(): ?iterable
     {
         return [
-            'settings.entities.credit_messages.list',
+            'settings.entities.credit_messages',
         ];
     }
 

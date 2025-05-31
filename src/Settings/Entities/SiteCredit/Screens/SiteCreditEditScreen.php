@@ -109,12 +109,17 @@ class SiteCreditEditScreen extends Screen
 
     /**
      * @param SiteCredit $siteCredit
-     * @param Request    $request
+     * @param Request $request
      *
      * @return \Illuminate\Http\RedirectResponse
      */
     public function save(SiteCredit $siteCredit, Request $request): RedirectResponse
     {
+        // todo
+        // 0. site_grade 생성해서 cost_per_credit, *_credit_cost 추가해주자 - hidden_emails만 사용 가능하도록 하자
+        // 1.
+        // 2. 토스페이먼츠 붙이거나 계좌이체 등 결제 완료하는 시점(SiteCreditPayment.Status = SUCCESS)에 이벤트로 생성하자
+        // 3. 모든 모델에 대하여 수정 삭제 불가능하도록 하자(hidden_emails만 가능하도록)
         $request->validate([
             'siteCredit.site_id' => 'required|string|max:255',
             'siteCredit.balance' => 'required|numeric|min:0',

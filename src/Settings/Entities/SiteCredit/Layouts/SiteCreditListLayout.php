@@ -34,24 +34,24 @@ class SiteCreditListLayout extends Table
             TD::make('balance', __('Balance'))
                 ->sort()
                 ->render(function (SiteCredit $siteCredit) {
-                    $color = $siteCredit->balance > 1000 ? 'text-success' : 
-                            ($siteCredit->balance > 100 ? 'text-warning' : 'text-danger');
+                    $color = $siteCredit->balance > 1000 ? 'text-success' :
+                        ($siteCredit->balance > 100 ? 'text-warning' : 'text-danger');
                     return "<span class='{$color}'>" . number_format($siteCredit->balance, 2) . "</span>";
                 }),
 
             TD::make('costs', __('Message Costs'))
                 ->render(function (SiteCredit $siteCredit) {
                     return "Alimtalk: {$siteCredit->alimtalk_cost}<br>" .
-                           "SMS: {$siteCredit->sms_cost}<br>" .
-                           "LMS: {$siteCredit->lms_cost}<br>" .
-                           "MMS: {$siteCredit->mms_cost}";
+                        "SMS: {$siteCredit->sms_cost}<br>" .
+                        "LMS: {$siteCredit->lms_cost}<br>" .
+                        "MMS: {$siteCredit->mms_cost}";
                 }),
 
             TD::make('auto_charge_enabled', __('Auto Charge'))
                 ->sort()
                 ->render(function (SiteCredit $siteCredit) {
-                    return $siteCredit->auto_charge_enabled ? 
-                        '<span class="badge bg-success">Enabled</span>' : 
+                    return $siteCredit->auto_charge_enabled ?
+                        '<span class="badge bg-success">Enabled</span>' :
                         '<span class="badge bg-secondary">Disabled</span>';
                 }),
 
@@ -61,7 +61,7 @@ class SiteCreditListLayout extends Table
                         return '-';
                     }
                     return "Threshold: {$siteCredit->auto_charge_threshold}<br>" .
-                           "Amount: {$siteCredit->auto_charge_amount}";
+                        "Amount: {$siteCredit->auto_charge_amount}";
                 }),
 
             TD::make('created_at', __('Created'))

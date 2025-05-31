@@ -79,7 +79,7 @@ class SiteCreditPaymentListScreen extends Screen
     public function permission(): ?iterable
     {
         return [
-            'settings.entities.site_credit_payments.list',
+            'settings.entities.site_credit_payments',
         ];
     }
 

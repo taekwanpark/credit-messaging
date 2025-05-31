@@ -9,6 +9,7 @@ use Techigh\CreditMessaging\Settings\Entities\SiteCreditUsage\SiteCreditUsage;
 use Techigh\CreditMessaging\Settings\Entities\CreditMessage\CreditMessage;
 use Techigh\CreditMessaging\Settings\Entities\MessageSendLog\MessageSendLog;
 
+
 class CreditMessagingSeeder extends Seeder
 {
     /**

@@ -79,7 +79,7 @@ class MessageSendLogListScreen extends Screen
     public function permission(): ?iterable
     {
         return [
-            'settings.entities.message_send_logs.list',
+            'settings.entities.message_send_logs',
         ];
     }
 

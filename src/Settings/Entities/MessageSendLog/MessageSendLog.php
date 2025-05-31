@@ -5,9 +5,7 @@ namespace Techigh\CreditMessaging\Settings\Entities\MessageSendLog;
 use Techigh\CreditMessaging\Services\DynamicModel;
 use App\Services\Traits\HasPermissions;
 use App\Services\Traits\SettingMenuItemTrait;
-use App\Traits\HasOrchidAttributes;
 use Laravel\Scout\Searchable;
-use Orchid\Filters\Types\Like;
 use Orchid\Filters\Types\Where;
 
 class MessageSendLog extends DynamicModel
@@ -63,7 +61,7 @@ class MessageSendLog extends DynamicModel
 
     public static function getMenuPriority(): int
     {
-        return 5050;
+        return 8050;
     }
 
     public function toSearchableArray(): array
