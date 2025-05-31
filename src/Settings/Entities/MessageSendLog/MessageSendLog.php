@@ -63,7 +63,7 @@ class MessageSendLog extends DynamicModel
 
     public static function getMenuPriority(): int
     {
-        return 1350;
+        return 5050;
     }
 
     public function toSearchableArray(): array

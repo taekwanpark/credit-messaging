@@ -55,7 +55,7 @@ class SiteCreditUsage extends DynamicModel
 
     public static function getMenuPriority(): int
     {
-        return 1330;
+        return 8030;
     }
 
     public function toSearchableArray(): array

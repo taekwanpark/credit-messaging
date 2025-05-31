@@ -68,7 +68,7 @@ class CreditMessage extends DynamicModel
 
     public static function getMenuPriority(): int
     {
-        return 1310;
+        return 8010;
     }
 
     public function toSearchableArray(): array

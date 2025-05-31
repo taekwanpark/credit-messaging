@@ -17,6 +17,8 @@ class CreditMessagingServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__ . '/../../config/credit-messaging.php', 'credit-messaging');
 
+        $this->loadJsonTranslationsFrom(__DIR__ . '/../../resources/lang');
+
         // Register core services
         $this->app->singleton(CreditManagerService::class, function ($app) {
             return new CreditManagerService();
@@ -48,6 +50,7 @@ class CreditMessagingServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+
         // Publish config
         $this->publishes([
             __DIR__ . '/../../config/credit-messaging.php' => config_path('credit-messaging.php'),

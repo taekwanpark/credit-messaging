@@ -54,7 +54,7 @@ class SiteCreditPayment extends DynamicModel
 
     public static function getMenuPriority(): int
     {
-        return 1340;
+        return 8040;
     }
 
     public function toSearchableArray(): array
