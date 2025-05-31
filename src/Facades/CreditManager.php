@@ -5,12 +5,12 @@ namespace Techigh\CreditMessaging\Facades;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @method static \Techigh\CreditMessaging\Models\SiteCredit getSiteCredit(string $siteId)
+ * @method static \Techigh\CreditMessaging\Settings\Entities\SiteCredit\SiteCredit getSiteCredit(string $siteId)
  * @method static float getBalance(string $siteId)
- * @method static \Techigh\CreditMessaging\Models\SiteCreditUsage chargeCredits(string $siteId, float $amount, array $metadata = [])
- * @method static \Techigh\CreditMessaging\Models\SiteCreditUsage refundCredits(\Techigh\CreditMessaging\Models\SiteCreditUsage $usage, float $amount, string $reason)
- * @method static \Techigh\CreditMessaging\Models\SiteCreditPayment addPayment(string $siteId, float $amount, string $method, array $data = [])
- * @method static bool completePayment(\Techigh\CreditMessaging\Models\SiteCreditPayment $payment)
+ * @method static \Techigh\CreditMessaging\Settings\Entities\SiteCreditUsage\SiteCreditUsage chargeCredits(string $siteId, float $amount, array $metadata = [])
+ * @method static \Techigh\CreditMessaging\Settings\Entities\SiteCreditUsage\SiteCreditUsage refundCredits(\Techigh\CreditMessaging\Settings\Entities\SiteCreditUsage\SiteCreditUsage $usage, float $amount, string $reason)
+ * @method static \Techigh\CreditMessaging\Settings\Entities\SiteCreditPayment\SiteCreditPayment addPayment(string $siteId, float $amount, string $method, array $data = [])
+ * @method static bool completePayment(\Techigh\CreditMessaging\Settings\Entities\SiteCreditPayment\SiteCreditPayment $payment)
  * @method static array getUsageStats(string $siteId, $startDate, $endDate)
  * @method static void checkAutoChargeAndProcess(string $siteId)
  *

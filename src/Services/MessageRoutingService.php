@@ -2,7 +2,7 @@
 
 namespace Techigh\CreditMessaging\Services;
 
-use Techigh\CreditMessaging\Models\CreditMessage;
+use Techigh\CreditMessaging\Settings\Entities\CreditMessage\CreditMessage;
 use Illuminate\Support\Facades\Log;
 
 class MessageRoutingService

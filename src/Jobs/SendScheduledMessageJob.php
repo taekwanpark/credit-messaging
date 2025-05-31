@@ -8,7 +8,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Techigh\CreditMessaging\Models\CreditMessage;
+use Techigh\CreditMessaging\Settings\Entities\CreditMessage\CreditMessage;
 use Techigh\CreditMessaging\Facades\MessageRouter;
 
 class SendScheduledMessageJob implements ShouldQueue

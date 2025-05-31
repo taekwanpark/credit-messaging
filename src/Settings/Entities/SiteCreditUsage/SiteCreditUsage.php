@@ -1,30 +1,20 @@
 <?php
 
-namespace Techigh\CreditMessaging\Models;
+namespace Techigh\CreditMessaging\Settings\Entities\SiteCreditUsage;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Techigh\CreditMessaging\Services\DynamicModel;
+use App\Services\Traits\HasPermissions;
+use App\Services\Traits\SettingMenuItemTrait;
+use App\Traits\HasOrchidAttributes;
+use Laravel\Scout\Searchable;
+use Orchid\Filters\Types\Like;
+use Orchid\Filters\Types\Where;
 
-class SiteCreditUsage extends Model
+class SiteCreditUsage extends DynamicModel
 {
-    use HasFactory, SoftDeletes;
-
-    protected $fillable = [
-        'uuid',
-        'site_id',
-        'message_type',
-        'quantity',
-        'cost_per_unit',
-        'total_cost',
-        'refund_amount',
-        'refund_reason',
-        'refunded_at',
-        'batch_id',
-        'metadata',
-        'status',
-        'sort_order',
-    ];
+    use SettingMenuItemTrait;
+    use HasPermissions;
+    use Searchable;
 
     protected $casts = [
         'quantity' => 'integer',
@@ -36,18 +26,46 @@ class SiteCreditUsage extends Model
         'sort_order' => 'integer',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
+    protected $allowedFilters = [
+        'id' => Where::class,
+        'site_id' => Like::class,
+        'message_type' => Where::class,
+        'status' => Where::class,
+    ];
 
-        static::creating(function ($model) {
-            if (empty($model->uuid)) {
-                $model->uuid = \Illuminate\Support\Str::uuid();
-            }
-            if (empty($model->sort_order)) {
-                $model->sort_order = time();
-            }
-        });
+    protected $allowedSorts = [
+        'id',
+        'site_id',
+        'message_type',
+        'status',
+        'total_cost',
+        'created_at',
+        'updated_at',
+    ];
+
+    protected $appends = [
+        'net_cost',
+        'message_type_display',
+    ];
+
+    public static function getMenuSection(): string
+    {
+        return __('Credits');
+    }
+
+    public static function getMenuPriority(): int
+    {
+        return 1330;
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id' => (int)$this->id,
+            'uuid' => (string)$this->uuid,
+            'site_id' => (string)$this->site_id,
+            'message_type' => (string)$this->message_type,
+        ];
     }
 
     /**
@@ -55,7 +73,7 @@ class SiteCreditUsage extends Model
      */
     public function siteCredit()
     {
-        return $this->belongsTo(SiteCredit::class, 'site_id', 'site_id');
+        return $this->belongsTo(\Techigh\CreditMessaging\Settings\Entities\SiteCredit\SiteCredit::class, 'site_id', 'site_id');
     }
 
     /**
@@ -63,7 +81,7 @@ class SiteCreditUsage extends Model
      */
     public function sendLogs()
     {
-        return $this->hasMany(MessageSendLog::class, 'usage_id');
+        return $this->hasMany(\Techigh\CreditMessaging\Settings\Entities\MessageSendLog\MessageSendLog::class, 'usage_id');
     }
 
     /**
@@ -117,7 +135,6 @@ class SiteCreditUsage extends Model
     public function markAsUsed(): bool
     {
         $this->status = 'used';
-
         return $this->save();
     }
 
@@ -127,7 +144,6 @@ class SiteCreditUsage extends Model
     public function markAsFailed(): bool
     {
         $this->status = 'failed';
-
         return $this->save();
     }
 

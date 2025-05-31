@@ -2,10 +2,10 @@
 
 namespace Techigh\CreditMessaging\Services;
 
-use Techigh\CreditMessaging\Models\SiteCredit;
-use Techigh\CreditMessaging\Models\SiteCreditPayment;
-use Techigh\CreditMessaging\Models\SiteCreditUsage;
-use Techigh\CreditMessaging\Models\MessageSendLog;
+use Techigh\CreditMessaging\Settings\Entities\SiteCredit\SiteCredit;
+use Techigh\CreditMessaging\Settings\Entities\SiteCreditPayment\SiteCreditPayment;
+use Techigh\CreditMessaging\Settings\Entities\SiteCreditUsage\SiteCreditUsage;
+use Techigh\CreditMessaging\Settings\Entities\MessageSendLog\MessageSendLog;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
