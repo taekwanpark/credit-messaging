@@ -2,10 +2,9 @@
 
 namespace Techigh\CreditMessaging\Settings\Entities\CreditMessage;
 
-use Techigh\CreditMessaging\Services\DynamicModel;
+use App\Services\DynamicModel;
 use App\Services\Traits\HasPermissions;
 use App\Services\Traits\SettingMenuItemTrait;
-use App\Traits\HasOrchidAttributes;
 use Laravel\Scout\Searchable;
 use Orchid\Filters\Types\Like;
 use Orchid\Filters\Types\Where;

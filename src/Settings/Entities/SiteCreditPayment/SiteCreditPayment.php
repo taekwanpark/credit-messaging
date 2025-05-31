@@ -2,7 +2,7 @@
 
 namespace Techigh\CreditMessaging\Settings\Entities\SiteCreditPayment;
 
-use Techigh\CreditMessaging\Services\DynamicModel;
+use App\Services\DynamicModel;
 use App\Services\Traits\HasPermissions;
 use App\Services\Traits\SettingMenuItemTrait;
 use App\Traits\HasOrchidAttributes;
