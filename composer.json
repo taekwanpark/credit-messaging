@@ -1,0 +1,65 @@
+{
+    "name": "techigh/credit-messaging",
+    "description": "A comprehensive credit-based messaging system for Laravel with multi-tenant support, smart routing, and automatic settlement",
+    "keywords": [
+        "laravel",
+        "messaging",
+        "sms",
+        "alimtalk",
+        "credit",
+        "multi-tenant",
+        "orchid"
+    ],
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Techigh",
+            "email": "dev@techigh.com"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "laravel/framework": "^10.0|^11.0",
+        "orchid/platform": "^14.0",
+        "guzzlehttp/guzzle": "^7.0",
+        "ramsey/uuid": "^4.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0",
+        "orchestra/testbench": "^8.0|^9.0",
+        "mockery/mockery": "^1.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Techigh\\CreditMessaging\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Techigh\\CreditMessaging\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Techigh\\CreditMessaging\\Providers\\CreditMessagingServiceProvider"
+            ],
+            "aliases": {
+                "CreditManager": "Techigh\\CreditMessaging\\Facades\\CreditManager",
+                "MessageRouter": "Techigh\\CreditMessaging\\Facades\\MessageRouter"
+            }
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
