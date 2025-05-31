@@ -58,7 +58,7 @@ class MessageSendLog extends DynamicModel
 
     public static function getMenuSection(): string
     {
-        return __('Credits');
+        return __('Credit Messaging');
     }
 
     public static function getMenuPriority(): int
