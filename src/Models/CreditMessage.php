@@ -2,35 +2,19 @@
 
 namespace Techigh\CreditMessaging\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Services\DynamicModel;
+use App\Services\Traits\HasPermissions;
+use App\Services\Traits\SettingMenuItemTrait;
+use App\Traits\HasOrchidAttributes;
+use Laravel\Scout\Searchable;
+use Orchid\Filters\Types\Like;
+use Orchid\Filters\Types\Where;
 
-class CreditMessage extends Model
+class CreditMessage extends DynamicModel
 {
-    use HasFactory, SoftDeletes;
-
-    protected $fillable = [
-        'uuid',
-        'site_id',
-        'title',
-        'message_type',
-        'routing_strategy',
-        'message_content',
-        'recipients',
-        'status',
-        'scheduled_at',
-        'sent_at',
-        'estimated_cost',
-        'actual_cost',
-        'total_recipients',
-        'success_count',
-        'failed_count',
-        'sort_order',
-    ];
+    use SettingMenuItemTrait, HasPermissions, HasOrchidAttributes, Searchable;
 
     protected $casts = [
-        'title' => 'array',
         'recipients' => 'array',
         'scheduled_at' => 'datetime',
         'sent_at' => 'datetime',
@@ -39,24 +23,60 @@ class CreditMessage extends Model
         'total_recipients' => 'integer',
         'success_count' => 'integer',
         'failed_count' => 'integer',
-        'sort_order' => 'integer',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
+    protected $allowedFilters = [
+        'id' => Where::class,
+        'site_id' => Like::class,
+        'message_type' => Where::class,
+        'status' => Where::class,
+        'routing_strategy' => Where::class,
+    ];
 
+    protected $allowedSorts = [
+        'id',
+        'site_id',
+        'message_type',
+        'status',
+        'scheduled_at',
+        'sent_at',
+        'created_at',
+        'updated_at',
+    ];
+
+    protected $appends = [
+        'success_rate',
+        'message_type_display',
+        'routing_strategy_display',
+    ];
+
+    protected static function booted(): void
+    {
         static::creating(function ($model) {
-            if (empty($model->uuid)) {
-                $model->uuid = \Illuminate\Support\Str::uuid();
-            }
-            if (empty($model->sort_order)) {
-                $model->sort_order = time();
-            }
             if (!empty($model->recipients) && empty($model->total_recipients)) {
                 $model->total_recipients = count($model->recipients);
             }
         });
+    }
+
+    public static function getMenuSection(): string
+    {
+        return __('Credits');
+    }
+
+    public static function getMenuPriority(): int
+    {
+        return 1310;
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id' => (int)$this->id,
+            'uuid' => (string)$this->uuid,
+            'site_id' => (string)$this->site_id,
+            'message_content' => (string)$this->message_content,
+        ];
     }
 
     /**

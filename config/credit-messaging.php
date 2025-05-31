@@ -19,8 +19,12 @@ return [
     |
     */
     'message_service' => [
-        'base_url' => env('MESSAGE_SERVICE_BASE_URL', ''),
+        'base_url' => env('MESSAGE_SERVICE_BASE_URL', 'https://api.sendgo.io'),
+        'access_key' => env('MESSAGE_SERVICE_ACCESS_KEY', ''),
+        'secret_key' => env('MESSAGE_SERVICE_SECRET_KEY', ''),
+
         'api_key' => env('MESSAGE_SERVICE_API_KEY', ''),
+
         'timeout' => env('MESSAGE_SERVICE_TIMEOUT', 30),
         'retry_attempts' => env('MESSAGE_SERVICE_RETRY_ATTEMPTS', 3),
         'retry_delay' => env('MESSAGE_SERVICE_RETRY_DELAY', 5), // seconds

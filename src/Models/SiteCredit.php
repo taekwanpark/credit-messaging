@@ -2,27 +2,31 @@
 
 namespace Techigh\CreditMessaging\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+// For smpp-provider compatibility - uses DynamicModel when available
+if (class_exists('App\Services\DynamicModel')) {
+    class_alias('App\Services\DynamicModel', 'Techigh\CreditMessaging\Models\BaseParentModel');
+} else {
+    class_alias('Techigh\CreditMessaging\Models\BaseModel', 'Techigh\CreditMessaging\Models\BaseParentModel');
+}
 
-class SiteCredit extends Model
+use Laravel\Scout\Searchable;
+use Orchid\Filters\Types\Like;
+use Orchid\Filters\Types\Where;
+
+// Conditionally use traits based on availability
+if (trait_exists('App\Services\Traits\HasPermissions')) {
+    use App\Services\Traits\HasPermissions;
+}
+if (trait_exists('App\Services\Traits\SettingMenuItemTrait')) {
+    use App\Services\Traits\SettingMenuItemTrait;
+}
+if (trait_exists('App\Traits\HasOrchidAttributes')) {
+    use App\Traits\HasOrchidAttributes;
+}
+
+class SiteCredit extends BaseParentModel
 {
-    use HasFactory, SoftDeletes;
-
-    protected $fillable = [
-        'uuid',
-        'site_id',
-        'balance',
-        'alimtalk_cost',
-        'sms_cost',
-        'lms_cost',
-        'mms_cost',
-        'auto_charge_enabled',
-        'auto_charge_threshold',
-        'auto_charge_amount',
-        'sort_order',
-    ];
+    use Searchable;
 
     protected $casts = [
         'balance' => 'decimal:2',
@@ -36,18 +40,39 @@ class SiteCredit extends Model
         'sort_order' => 'integer',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
+    protected $allowedFilters = [
+        'id' => Where::class,
+        'site_id' => Like::class,
+        'balance' => Where::class,
+        'auto_charge_enabled' => Where::class,
+    ];
 
-        static::creating(function ($model) {
-            if (empty($model->uuid)) {
-                $model->uuid = \Illuminate\Support\Str::uuid();
-            }
-            if (empty($model->sort_order)) {
-                $model->sort_order = time();
-            }
-        });
+    protected $allowedSorts = [
+        'id',
+        'site_id',
+        'balance',
+        'created_at',
+        'updated_at',
+    ];
+
+    public static function getMenuSection(): string
+    {
+        return __('Credits');
+    }
+
+    public static function getMenuPriority(): int
+    {
+        return 1320;
+    }
+
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id' => (int)$this->id,
+            'uuid' => (string)$this->uuid,
+            'site_id' => (string)$this->site_id,
+        ];
     }
 
     /**
@@ -98,5 +123,13 @@ class SiteCredit extends Model
             'mms' => $this->mms_cost,
             default => 0.00
         };
+    }
+
+    /**
+     * Check if there's enough balance for the given amount
+     */
+    public function hasEnoughBalance(float $amount): bool
+    {
+        return $this->balance >= $amount;
     }
 }

@@ -9,12 +9,18 @@ class MessageServiceAdapter
 {
     private string $baseUrl;
     private string $apiKey;
+    private string $accessKey;
+    private string $secretKey;
     private CreditManagerService $creditManager;
 
     public function __construct(CreditManagerService $creditManager)
     {
         $this->baseUrl = config('credit-messaging.message_service.base_url', '');
+        $this->accessKey = config('credit-messaging.message_service.access_key', '');
+        $this->secretKey = config('credit-messaging.message_service.secret_key', '');
+
         $this->apiKey = config('credit-messaging.message_service.api_key', '');
+
         $this->creditManager = $creditManager;
     }
 
@@ -27,7 +33,7 @@ class MessageServiceAdapter
             $response = Http::withHeaders([
                 'Authorization' => "Bearer {$this->apiKey}",
                 'Content-Type' => 'application/json'
-            ])->post("{$this->baseUrl}/alimtalk/send", [
+            ])->post("{$this->baseUrl}/v2/alimtalk/send", [
                 'template_code' => $templateCode,
                 'recipients' => $recipients,
                 'template_data' => $templateData,
@@ -212,12 +218,13 @@ class MessageServiceAdapter
         $siteCredit = $this->creditManager->getSiteCredit($siteId);
         $estimatedCost = $this->estimateCost($siteId, $messageType, $quantity);
         $hasEnoughBalance = $siteCredit->hasEnoughBalance($estimatedCost);
+        $currentBalance = $this->creditManager->getBalance($siteId);
 
         return [
             'can_send' => $hasEnoughBalance,
             'estimated_cost' => $estimatedCost,
-            'current_balance' => $siteCredit->balance,
-            'shortage' => $hasEnoughBalance ? 0 : ($estimatedCost - $siteCredit->balance),
+            'current_balance' => $currentBalance,
+            'shortage' => $hasEnoughBalance ? 0 : ($estimatedCost - $currentBalance),
             'cost_per_unit' => $siteCredit->getCostForMessageType($messageType)
         ];
     }

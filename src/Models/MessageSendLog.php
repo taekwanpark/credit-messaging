@@ -2,31 +2,17 @@
 
 namespace Techigh\CreditMessaging\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Services\DynamicModel;
+use App\Services\Traits\HasPermissions;
+use App\Services\Traits\SettingMenuItemTrait;
+use App\Traits\HasOrchidAttributes;
+use Laravel\Scout\Searchable;
+use Orchid\Filters\Types\Like;
+use Orchid\Filters\Types\Where;
 
-class MessageSendLog extends Model
+class MessageSendLog extends DynamicModel
 {
-    use HasFactory, SoftDeletes;
-
-    protected $fillable = [
-        'uuid',
-        'usage_id',
-        'message_ids',
-        'message_type',
-        'total_count',
-        'success_count',
-        'failed_count',
-        'webhook_result',
-        'webhook_received_at',
-        'settlement_status',
-        'final_cost',
-        'settled_at',
-        'error_message',
-        'retry_count',
-        'sort_order',
-    ];
+    use SettingMenuItemTrait, HasPermissions, HasOrchidAttributes, Searchable;
 
     protected $casts = [
         'message_ids' => 'array',
@@ -38,21 +24,52 @@ class MessageSendLog extends Model
         'final_cost' => 'decimal:2',
         'settled_at' => 'datetime',
         'retry_count' => 'integer',
-        'sort_order' => 'integer',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
+    protected $allowedFilters = [
+        'id' => Where::class,
+        'usage_id' => Where::class,
+        'message_type' => Where::class,
+        'settlement_status' => Where::class,
+    ];
 
-        static::creating(function ($model) {
-            if (empty($model->uuid)) {
-                $model->uuid = \Illuminate\Support\Str::uuid();
-            }
-            if (empty($model->sort_order)) {
-                $model->sort_order = time();
-            }
-        });
+    protected $allowedSorts = [
+        'id',
+        'usage_id',
+        'message_type',
+        'total_count',
+        'success_count',
+        'settlement_status',
+        'webhook_received_at',
+        'settled_at',
+        'created_at',
+        'updated_at',
+    ];
+
+    protected $appends = [
+        'success_rate',
+        'message_type_display',
+        'settlement_status_display',
+    ];
+
+    public static function getMenuSection(): string
+    {
+        return __('Credits');
+    }
+
+    public static function getMenuPriority(): int
+    {
+        return 1350;
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id' => (int)$this->id,
+            'uuid' => (string)$this->uuid,
+            'usage_id' => (int)$this->usage_id,
+            'message_type' => (string)$this->message_type,
+        ];
     }
 
     /**
@@ -220,5 +237,36 @@ class MessageSendLog extends Model
     public function shouldRetrySettlement(int $maxRetries = 5): bool
     {
         return $this->isSettlementFailed() && $this->retry_count < $maxRetries;
+    }
+
+    /**
+     * Check if settlement is settled/completed
+     */
+    public function isSettled(): bool
+    {
+        return $this->settlement_status === 'completed';
+    }
+
+    /**
+     * Update webhook result
+     */
+    public function updateWebhookResult(array $webhookData): bool
+    {
+        $this->webhook_result = $webhookData;
+        $this->webhook_received_at = now();
+
+        return $this->save();
+    }
+
+    /**
+     * Mark as settled
+     */
+    public function markAsSettled(float $finalCost): bool
+    {
+        $this->settlement_status = 'completed';
+        $this->final_cost = $finalCost;
+        $this->settled_at = now();
+
+        return $this->save();
     }
 }

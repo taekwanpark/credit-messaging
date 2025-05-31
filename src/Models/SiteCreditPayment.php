@@ -2,47 +2,65 @@
 
 namespace Techigh\CreditMessaging\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Services\DynamicModel;
+use App\Services\Traits\HasPermissions;
+use App\Services\Traits\SettingMenuItemTrait;
+use App\Traits\HasOrchidAttributes;
+use Laravel\Scout\Searchable;
+use Orchid\Filters\Types\Like;
+use Orchid\Filters\Types\Where;
 
-class SiteCreditPayment extends Model
+class SiteCreditPayment extends DynamicModel
 {
-    use HasFactory, SoftDeletes;
-
-    protected $fillable = [
-        'uuid',
-        'site_id',
-        'amount',
-        'payment_method',
-        'status',
-        'transaction_id',
-        'payment_gateway',
-        'payment_data',
-        'notes',
-        'completed_at',
-        'sort_order',
-    ];
+    use SettingMenuItemTrait, HasPermissions, HasOrchidAttributes, Searchable;
 
     protected $casts = [
         'amount' => 'decimal:2',
         'payment_data' => 'array',
         'completed_at' => 'datetime',
-        'sort_order' => 'integer',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
+    protected $allowedFilters = [
+        'id' => Where::class,
+        'site_id' => Like::class,
+        'payment_method' => Where::class,
+        'status' => Where::class,
+        'payment_gateway' => Where::class,
+    ];
 
-        static::creating(function ($model) {
-            if (empty($model->uuid)) {
-                $model->uuid = \Illuminate\Support\Str::uuid();
-            }
-            if (empty($model->sort_order)) {
-                $model->sort_order = time();
-            }
-        });
+    protected $allowedSorts = [
+        'id',
+        'site_id',
+        'amount',
+        'payment_method',
+        'status',
+        'completed_at',
+        'created_at',
+        'updated_at',
+    ];
+
+    protected $appends = [
+        'payment_method_display',
+    ];
+
+    public static function getMenuSection(): string
+    {
+        return __('Credits');
+    }
+
+    public static function getMenuPriority(): int
+    {
+        return 1330;
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id' => (int)$this->id,
+            'uuid' => (string)$this->uuid,
+            'site_id' => (string)$this->site_id,
+            'transaction_id' => (string)$this->transaction_id,
+        ];
     }
 
     /**

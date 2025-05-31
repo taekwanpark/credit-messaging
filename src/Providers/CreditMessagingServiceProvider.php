@@ -3,7 +3,6 @@
 namespace Techigh\CreditMessaging\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Route;
 use Techigh\CreditMessaging\Services\CreditManagerService;
 use Techigh\CreditMessaging\Services\MessageServiceAdapter;
 use Techigh\CreditMessaging\Services\MessageRoutingService;
@@ -18,28 +17,28 @@ class CreditMessagingServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/../../config/credit-messaging.php', 'credit-messaging');
 
         // Register core services
-        $this->app->singleton(CreditManagerService::class, function ($app) {
+        $this->app->singleton(CreditManagerService::class, function () {
             return new CreditManagerService();
         });
 
-        $this->app->singleton(MessageServiceAdapter::class, function ($app) {
-            return new MessageServiceAdapter(config('credit-messaging.message_services'));
+        $this->app->singleton(MessageServiceAdapter::class, function () {
+            return new MessageServiceAdapter(app(CreditManagerService::class));
         });
 
-        $this->app->singleton(MessageRoutingService::class, function ($app) {
+        $this->app->singleton(MessageRoutingService::class, function () {
             return new MessageRoutingService(
-                $app->make(CreditManagerService::class),
-                $app->make(MessageServiceAdapter::class)
+                app(MessageServiceAdapter::class),
+                app(CreditManagerService::class)
             );
         });
 
         // Register facades
-        $this->app->bind('credit-manager', function ($app) {
-            return $app->make(CreditManagerService::class);
+        $this->app->bind('credit-manager', function () {
+            return app(CreditManagerService::class);
         });
 
-        $this->app->bind('message-router', function ($app) {
-            return $app->make(MessageRoutingService::class);
+        $this->app->bind('message-router', function () {
+            return app(MessageRoutingService::class);
         });
     }
 

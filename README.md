@@ -1,5 +1,9 @@
 # Techigh Credit Messaging
 
+**Languages:** [English](README.md) | [한국어](README-ko.md)
+
+**Documentation:** [Architecture](ARCHITECTURE.md)
+
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/Techigh/credit-messaging.svg?style=flat-square)](https://packagist.org/packages/Techigh/credit-messaging)
 [![Total Downloads](https://img.shields.io/packagist/dt/Techigh/credit-messaging.svg?style=flat-square)](https://packagist.org/packages/Techigh/credit-messaging)
 [![License](https://img.shields.io/packagist/l/Techigh/credit-messaging.svg?style=flat-square)](https://packagist.org/packages/Techigh/credit-messaging)

@@ -6,6 +6,10 @@ use Techigh\CreditMessaging\Models\SiteCredit;
 use Techigh\CreditMessaging\Models\SiteCreditPayment;
 use Techigh\CreditMessaging\Models\SiteCreditUsage;
 use Techigh\CreditMessaging\Models\MessageSendLog;
+use App\Services\Credits\CreditDeductService;
+use App\Services\Credits\CreditFactoryService;
+use App\Settings\Entities\Team\Team;
+use App\Settings\Entities\User\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -243,5 +247,122 @@ class CreditManagerService
             'message_counts' => $usages->groupBy('message_type')->map->sum('quantity'),
             'usage_count' => $usages->count()
         ];
+    }
+
+    /**
+     * 기존 smpp-provider Credit 시스템과 연동
+     * 사용자/팀의 기존 크레딧으로 site 크레딧을 충전
+     */
+    public function chargeFromOwnerCredit(string $siteId, User|Team $owner, float $amount): SiteCreditPayment
+    {
+        return DB::transaction(function () use ($siteId, $owner, $amount) {
+            // 기존 시스템에서 잔액 확인
+            $availableBalance = $owner->sumOfBalanceCredits();
+            
+            if ($availableBalance < $amount) {
+                throw new \Exception("크레딧이 부족합니다. 필요: {$amount}, 보유: {$availableBalance}");
+            }
+
+            // 기존 크레딧에서 차감
+            $creditDeductService = new CreditDeductService();
+            $creditDeductService->owner($owner)
+                ->type('site_charge')
+                ->targetCount($amount)
+                ->replaceReason('사이트 크레딧 충전')
+                ->deduct();
+
+            // 사이트 크레딧 결제 기록 생성
+            $payment = $this->addPayment($siteId, $amount, 'owner_credit', [
+                'owner_type' => get_class($owner),
+                'owner_id' => $owner->uuid,
+                'source' => 'owner_credit_transfer'
+            ]);
+
+            // 결제 완료 처리
+            $this->completePayment($payment);
+
+            return $payment;
+        });
+    }
+
+    /**
+     * 사이트 크레딧을 소유자 크레딧으로 환급
+     */
+    public function refundToOwnerCredit(string $siteId, User|Team $owner, float $amount): void
+    {
+        DB::transaction(function () use ($siteId, $owner, $amount) {
+            $siteCredit = $this->getSiteCredit($siteId);
+            
+            if ($siteCredit->balance < $amount) {
+                throw new \Exception("사이트 크레딧이 부족합니다. 요청: {$amount}, 보유: {$siteCredit->balance}");
+            }
+
+            // 사이트 크레딧에서 차감
+            $siteCredit->decrement('balance', $amount);
+
+            // 소유자에게 크레딧 환급
+            $creditFactoryService = new CreditFactoryService();
+            $creditFactoryService::create([
+                'owner' => $owner,
+                'type' => 'SITE_REFUND',
+                'status' => 'SUCCESS',
+                'memo' => ['reason' => '사이트 크레딧 환급', 'site_id' => $siteId],
+                'cost_per_credit' => 1.0, // 1:1 환급
+                'purchase_amount' => $amount,
+                'credits_amount' => $amount
+            ]);
+
+            Log::info("사이트 크레딧 환급 완료", [
+                'site_id' => $siteId,
+                'owner_type' => get_class($owner),
+                'owner_id' => $owner->uuid,
+                'amount' => $amount
+            ]);
+        });
+    }
+
+    /**
+     * 기존 크레딧 시스템의 단가 정보를 사이트 크레딧에 동기화
+     */
+    public function syncCostFromOwnerGrade(string $siteId, User|Team $owner): void
+    {
+        $siteCredit = $this->getSiteCredit($siteId);
+        
+        if ($owner instanceof User && $owner->grade) {
+            $grade = $owner->grade;
+            $baseCostPerCredit = $grade->cost_per_credit;
+            
+            // 기본 설정에서 메시지 타입별 크레딧 비용을 가져와서 실제 금액으로 변환
+            $siteCredit->update([
+                'sms_cost' => $baseCostPerCredit * siteConfigs('sms_per_cost', 20),
+                'lms_cost' => $baseCostPerCredit * siteConfigs('lms_per_cost', 40),
+                'mms_cost' => $baseCostPerCredit * siteConfigs('mms_per_cost', 70),
+                'alimtalk_cost' => $baseCostPerCredit * siteConfigs('kakao_no_per_cost', 15)
+            ]);
+        }
+    }
+
+    /**
+     * 테넌트/사이트 식별자로부터 소유자 찾기
+     */
+    public function getOwnerBySiteId(string $siteId): User|Team|null
+    {
+        // 테넌트 시스템을 사용하는 경우
+        if (class_exists('\Stancl\Tenancy\Database\Models\Tenant')) {
+            $tenant = \Stancl\Tenancy\Database\Models\Tenant::find($siteId);
+            if ($tenant && isset($tenant->data['owner_type']) && isset($tenant->data['owner_id'])) {
+                $ownerType = $tenant->data['owner_type'];
+                $ownerId = $tenant->data['owner_id'];
+                
+                if ($ownerType === 'App\\Settings\\Entities\\User\\User') {
+                    return User::where('uuid', $ownerId)->first();
+                } elseif ($ownerType === 'App\\Settings\\Entities\\Team\\Team') {
+                    return Team::where('uuid', $ownerId)->first();
+                }
+            }
+        }
+
+        // 기본적으로 site_id를 team uuid로 간주
+        return Team::where('uuid', $siteId)->first() ?? User::where('uuid', $siteId)->first();
     }
 }

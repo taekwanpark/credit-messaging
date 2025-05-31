@@ -2,29 +2,17 @@
 
 namespace Techigh\CreditMessaging\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Services\DynamicModel;
+use App\Services\Traits\HasPermissions;
+use App\Services\Traits\SettingMenuItemTrait;
+use App\Traits\HasOrchidAttributes;
+use Laravel\Scout\Searchable;
+use Orchid\Filters\Types\Like;
+use Orchid\Filters\Types\Where;
 
-class SiteCreditUsage extends Model
+class SiteCreditUsage extends DynamicModel
 {
-    use HasFactory, SoftDeletes;
-
-    protected $fillable = [
-        'uuid',
-        'site_id',
-        'message_type',
-        'quantity',
-        'cost_per_unit',
-        'total_cost',
-        'refund_amount',
-        'refund_reason',
-        'refunded_at',
-        'batch_id',
-        'metadata',
-        'status',
-        'sort_order',
-    ];
+    use SettingMenuItemTrait, HasPermissions, HasOrchidAttributes, Searchable;
 
     protected $casts = [
         'quantity' => 'integer',
@@ -33,21 +21,51 @@ class SiteCreditUsage extends Model
         'refund_amount' => 'decimal:2',
         'metadata' => 'array',
         'refunded_at' => 'datetime',
-        'sort_order' => 'integer',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
+    protected $allowedFilters = [
+        'id' => Where::class,
+        'site_id' => Like::class,
+        'message_type' => Where::class,
+        'status' => Where::class,
+        'batch_id' => Like::class,
+    ];
 
-        static::creating(function ($model) {
-            if (empty($model->uuid)) {
-                $model->uuid = \Illuminate\Support\Str::uuid();
-            }
-            if (empty($model->sort_order)) {
-                $model->sort_order = time();
-            }
-        });
+    protected $allowedSorts = [
+        'id',
+        'site_id',
+        'message_type',
+        'quantity',
+        'total_cost',
+        'status',
+        'refunded_at',
+        'created_at',
+        'updated_at',
+    ];
+
+    protected $appends = [
+        'net_cost',
+        'message_type_display',
+    ];
+
+    public static function getMenuSection(): string
+    {
+        return __('Credits');
+    }
+
+    public static function getMenuPriority(): int
+    {
+        return 1340;
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id' => (int)$this->id,
+            'uuid' => (string)$this->uuid,
+            'site_id' => (string)$this->site_id,
+            'batch_id' => (string)$this->batch_id,
+        ];
     }
 
     /**
@@ -151,5 +169,30 @@ class SiteCreditUsage extends Model
             'mms' => 'MMS',
             default => strtoupper($this->message_type)
         };
+    }
+
+    /**
+     * Get refundable amount for this usage
+     */
+    public function getRefundableAmount(): float
+    {
+        return $this->total_cost - $this->refund_amount;
+    }
+
+    /**
+     * Process refund for this usage
+     */
+    public function refund(float $amount, ?string $reason = null): bool
+    {
+        if ($amount > $this->getRefundableAmount()) {
+            throw new \Exception("환불 가능 금액을 초과했습니다.");
+        }
+
+        $this->refund_amount += $amount;
+        $this->refund_reason = $reason;
+        $this->refunded_at = now();
+        $this->status = 'refunded';
+
+        return $this->save();
     }
 }
