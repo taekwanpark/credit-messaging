@@ -6,9 +6,80 @@
 
 A comprehensive credit-based messaging system for Laravel with multi-tenant support, smart routing, and automatic settlement.
 
+---
+
+````md
+## 💬 Installation Guide (via Composer VCS Repository)
+
+This package is not (yet) registered on Packagist.  
+To install it via Composer, use the GitHub repository directly.
+
+---
+
+### 🔧 Step 1: Add the VCS Repository to composer.json
+
+Open your Laravel project's `composer.json` and add this block:
+
+```json
+"repositories": [
+  {
+    "type": "vcs",
+    "url": "https://github.com/taekwanpark/credit-messaging.git"
+  }
+]
+````
+
+> Make sure this goes **above** your `"require"` block.
+
+---
+
+### 📦 Step 2: Require the Package via Composer
+
+#### ✅ Option A: Install a specific tagged version (recommended)
+
+```bash
+composer require techigh/credit-messaging:^1.0
+```
+
+> Make sure a valid tag like `v1.0.0` exists in the repository.
+
+#### ✅ Option B: Install from a branch (e.g. main)
+
+```bash
+composer require techigh/credit-messaging:dev-main
+```
+
+> Prefix `dev-` is **required** when installing from branches.
+
+---
+
+### ✅ Laravel Auto-Discovery Support
+
+If you're using Laravel 5.5+ (which includes Laravel 10, 11...),
+this package supports **auto-discovery** for both service providers and facades.
+
+No further manual configuration needed. You’re good to go!
+
+---
+
+### 📚 Optional: Publish Config / Migrations
+
+Run the following if the package includes publishable assets:
+
+```bash
+php artisan vendor:publish --provider="Techigh\CreditMessaging\Providers\CreditMessagingServiceProvider"
+```
+
+---
+
+Happy Messaging! 🚀
+For more details, see the source at:
+🔗 [https://github.com/taekwanpark/credit-messaging](https://github.com/taekwanpark/credit-messaging)
+
 ## Features
 
 🏦 **Credit Management**
+
 - Site-specific credit balances
 - Flexible pricing per message type
 - Auto-charge with configurable thresholds
@@ -16,18 +87,21 @@ A comprehensive credit-based messaging system for Laravel with multi-tenant supp
 - Automatic refunds for failed messages
 
 📱 **Message Routing**
+
 - **Alimtalk First**: Attempt Alimtalk, fallback to SMS
 - **SMS Only**: Direct SMS sending
 - **Cost Optimized**: Choose cheapest available option
 - **Scheduled messaging** with queue processing
 
 💰 **Settlement & Billing**
+
 - Real-time cost tracking
 - Automatic settlement based on delivery results
 - Detailed usage analytics
 - Refund processing for failures
 
 🔧 **Admin Integration**
+
 - Laravel Orchid platform support
 - Comprehensive CRUD interfaces
 - Real-time monitoring dashboards
