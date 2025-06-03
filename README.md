@@ -1,4 +1,4 @@
-# Techigh Credit Messaging
+# Credit Messaging
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/Techigh/credit-messaging.svg?style=flat-square)](https://packagist.org/packages/Techigh/credit-messaging)
 [![Total Downloads](https://img.shields.io/packagist/dt/Techigh/credit-messaging.svg?style=flat-square)](https://packagist.org/packages/Techigh/credit-messaging)
@@ -6,9 +6,6 @@
 
 A comprehensive credit-based messaging system for Laravel with multi-tenant support, smart routing, and automatic settlement.
 
----
-
-````md
 ## 💬 Installation Guide (via Composer VCS Repository)
 
 This package is not (yet) registered on Packagist.  
@@ -21,13 +18,15 @@ To install it via Composer, use the GitHub repository directly.
 Open your Laravel project's `composer.json` and add this block:
 
 ```json
-"repositories": [
-  {
-    "type": "vcs",
-    "url": "https://github.com/taekwanpark/credit-messaging.git"
-  }
-]
-````
+{
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/taekwanpark/credit-messaging.git"
+    }
+  ]
+}
+```
 
 > Make sure this goes **above** your `"require"` block.
 

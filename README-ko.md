@@ -6,8 +6,6 @@
 
 멀티테넌트 지원, 스마트 라우팅, 자동 정산 기능을 갖춘 Laravel용 종합 크레딧 기반 메시징 시스템입니다.
 
----
-
 ## 📄 설치 가이드 (Composer VCS 방식)
 
 이 패키지는 아직 Packagist에 등록되어 있지 않습니다.
@@ -20,12 +18,14 @@
 Laravel 프로젝트의 `composer.json` 파일에 아래 내용을 추가하세요:
 
 ```json
-"repositories": [
 {
-"type": "vcs",
-"url": "https://github.com/taekwanpark/credit-messaging.git"
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/taekwanpark/credit-messaging.git"
+    }
+  ]
 }
-]
 ```
 
 > `"require"` 항목 **위쪽**에 위치해야 합니다.
