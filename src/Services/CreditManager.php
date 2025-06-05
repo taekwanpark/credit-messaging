@@ -232,10 +232,10 @@ class CreditManager
                     'used_credits' => 0,
                     'balance_credits' => $totalRechargeCreditAmount,
                     'cost_per_credit' => siteConfigs('site_cost_per_credit'),
-                    'site_alimtalk_credits_cost' => siteConfigs('site_alimtalk_credits_cost'),
-                    'site_sms_credits_cost' => siteConfigs('site_sms_credits_cost'),
-                    'site_lms_credits_cost' => siteConfigs('site_lms_credits_cost'),
-                    'site_mms_credits_cost' => siteConfigs('site_mms_credits_cost'),
+                    'alimtalk_credits_cost' => siteConfigs('site_alimtalk_credits_cost'),
+                    'sms_credits_cost' => siteConfigs('site_sms_credits_cost'),
+                    'lms_credits_cost' => siteConfigs('site_lms_credits_cost'),
+                    'mms_credits_cost' => siteConfigs('site_mms_credits_cost'),
                 ]);
 
                 SiteCreditUsage::query()->create([
