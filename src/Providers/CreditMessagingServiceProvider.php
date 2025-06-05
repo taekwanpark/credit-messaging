@@ -5,9 +5,6 @@ namespace Techigh\CreditMessaging\Providers;
 use App\Settings\Configs\SiteConfigHandler;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
-use Techigh\CreditMessaging\Services\CreditManagerService;
-use Techigh\CreditMessaging\Services\MessageServiceAdapter;
-use Techigh\CreditMessaging\Services\MessageRoutingService;
 use Techigh\CreditMessaging\Services\MessageSendService;
 
 class CreditMessagingServiceProvider extends ServiceProvider

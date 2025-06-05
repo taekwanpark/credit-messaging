@@ -33,10 +33,7 @@
   "autoload": {
     "psr-4": {
       "Techigh\\CreditMessaging\\": "src/"
-    },
-    "classmap": [
-      "database/seeders"
-    ]
+    }
   },
   "autoload-dev": {
     "psr-4": {
