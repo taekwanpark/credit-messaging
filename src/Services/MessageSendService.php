@@ -21,7 +21,7 @@ class MessageSendService
     /**
      * 알림톡 발송 요청
      */
-    public static function sendAlimtalk(array $inputs)
+    public function sendAlimtalk(array $inputs)
     {
         return DB::transaction(function () use ($inputs) {
 
