@@ -179,9 +179,11 @@ class CreditManager
             $totalRechargeCreditAmount = 0;
             $totalRechargeCount = 0;
 
+            Log::debug($siteCampaign->type);
             // 알림톡인 경우
             if ($siteCampaign->type === 'alimtalk') {
                 // 환급 및 차감
+                Log::debug($siteCampaign->replace_sms . ' : 대체 문자');
                 if ($siteCampaign->replace_sms) {
                     // 카카오 10건 중 카카오 성공 3개 카카오 실패 7개  / 대체 문자 7개 sms 성공 5개  sms 실패 2개
 
@@ -194,11 +196,13 @@ class CreditManager
 
                     // 카카오 성공 3개는 sms 3개 환급 후 alimtalk 3개 차감
                     $revertCount = $successCount;
+                    Log::debug($revertCount . ' : 알림톡으로 다시 차감하고 환급해줘야해!!');
                     if ($revertCount > 0) {
+                        Log::debug('here~~~~');
                         $totalRechargeCount += $revertCount;
                         $totalRechargeCreditAmount += round($siteCampaignUsage->used_credits / $siteCampaignUsage->used_count * $revertCount, 2);
                         //alimltalk으로 차감
-                        self::deductCredits('alimtalk', $revertCount, $siteCampaignId);
+                        $this->deductCredits('alimtalk', $revertCount, $siteCampaignId);
                     }
                 } else {
                     // 카카오 10건 중 카카오 성공 3개 카카오 실패 7개
