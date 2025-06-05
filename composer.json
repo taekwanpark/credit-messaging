@@ -46,7 +46,8 @@
         "Techigh\\CreditMessaging\\Providers\\CreditMessagingServiceProvider"
       ],
       "aliases": {
-        "MessageSend": "Techigh\\CreditMessaging\\Facades\\MessageSend"
+        "MessageSend": "Techigh\\CreditMessaging\\Facades\\MessageSend",
+        "CreditHandler": "Techigh\\CreditMessaging\\Facades\\CreditHandler"
       }
     }
   },

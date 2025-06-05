@@ -5,6 +5,7 @@ namespace Techigh\CreditMessaging\Providers;
 use App\Settings\Configs\SiteConfigHandler;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
+use Techigh\CreditMessaging\Services\CreditManager;
 use Techigh\CreditMessaging\Services\MessageSendService;
 
 class CreditMessagingServiceProvider extends ServiceProvider
@@ -32,6 +33,10 @@ class CreditMessagingServiceProvider extends ServiceProvider
         // Register MessageSendService as singleton
         $this->app->singleton('message-send', function ($app) {
             return new MessageSendService();
+        });
+
+        $this->app->singleton('credit-handler', function ($app) {
+            return new CreditManager();
         });
     }
 

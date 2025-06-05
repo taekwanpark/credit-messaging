@@ -11,46 +11,20 @@ use Illuminate\Support\Facades\Log;
 use libphonenumber\NumberParseException;
 use libphonenumber\PhoneNumberFormat;
 use libphonenumber\PhoneNumberUtil;
-use Techigh\CreditMessaging\Facades\CreditHandler;
 use Techigh\CreditMessaging\Settings\Entities\SiteCampaign\SiteCampaign;
 use Techigh\CreditMessaging\Settings\Entities\SiteCampaignMessage\SiteCampaignMessage;
 use Techigh\CreditMessaging\Settings\Entities\SiteCredit\SiteCredit;
+use Techigh\CreditMessaging\Settings\Entities\SiteCreditUsage\SiteCreditUsage;
 
-class MessageSendService
+class CreditManager
 {
-    /**
-     * 알림톡 발송 요청
-     */
-    public static function sendAlimtalk(array $inputs)
-    {
-        return DB::transaction(function () use ($inputs) {
-
-            // 크레딧 차감 유형 결정
-            $creditType = CreditHandler::getCreditType($inputs);
-
-            // 크레딧 검증
-            CreditHandler::validateCredits($creditType, count($inputs['contacts']));
-
-            // 캠페인 생성
-            $campaign = $this->createCampaign($inputs);
-
-            // 크레딧 차감
-            CreditHandler::deductCredits($creditType, count($inputs['contacts']), $campaign->getKey());
-
-            // 개별 메시지 생성
-            $this->createCampaignMessages($campaign->getKey(), $inputs['contacts']);
-
-            // 5. 메시지 플랫폼에 발송 요청
-            $this->requestToMessagePlatform($campaign, $campaign->siteCampaignMessages);
-        });
-    }
 
     /**
      * 크레딧 차감 유형 결정
      * @param $inputs
      * @return string
      */
-    private function getCreditType($inputs): string
+    public static function getCreditType($inputs): string
     {
         $replaceSms = Arr::get($inputs, 'type', 'alimtalk') === 'alimtalk' ? Arr::get($inputs, 'replaceSms', true) : false;
         return match (true) {
@@ -64,7 +38,7 @@ class MessageSendService
      * 크레딧 검증
      * @throws \Exception
      */
-    private function validateCredits(string $messageType, int $targetCount): void
+    public static function validateCredits(string $creditType, int $targetCount): void
     {
         // 사용 가능한 siteCredit 가져오기
         $availableSiteCredits = SiteCredit::query()
@@ -74,9 +48,9 @@ class MessageSendService
 
         // 발송 가능한 수량
         $totalSendableCount = 0;
-        $availableSiteCredits->each(function (SiteCredit $siteCredit) use (&$totalSendableCount, $messageType) {
+        $availableSiteCredits->each(function (SiteCredit $siteCredit) use (&$totalSendableCount, $creditType) {
             $balance = $siteCredit->balance_credits;
-            $creditCost = $siteCredit->{"{$messageType}_credits_cost"} ?? 0;
+            $creditCost = $siteCredit->{"{$creditType}_credits_cost"} ?? 0;
 
             if ($creditCost > 0) $sendableCount = $balance / $creditCost;
             else $sendableCount = 0;
@@ -94,56 +68,10 @@ class MessageSendService
 
 
     /**
-     * 캠페인 생성
-     */
-    private function createCampaign(array $inputs): SiteCampaign
-    {
-
-        // 캠페인 유형
-        $messageType = Arr::get($inputs, 'type', 'alimtalk');
-
-        // 대체 문자 사용 여부
-        $replaceSms = $messageType === 'alimtalk' ? Arr::get($inputs, 'replaceSms', true) : false;
-
-        // count
-        $targetCount = count(Arr::get($inputs, 'contacts', []));
-
-        //전송일자 지정
-        $sendAt = Arr::get($inputs, 'sendAt', '') ?? '';
-        $sendAt = $sendAt === '' ? Carbon::now() : Carbon::parse($sendAt);
-        if ($sendAt < Carbon::now()) $sendAt = Carbon::now();
-
-        // SiteCampaign 생성 로직
-        $campaignData = [
-            'type' => $messageType,
-            'status' => 'PENDING',
-            'total_count' => $targetCount,
-            'pending_count' => $targetCount,
-            'replace_sms' => $replaceSms,
-            'send_at' => $sendAt,
-        ];
-
-        // 알림톡인 경우 알림톡 관련 정보 추가
-        if ($messageType === 'alimtalk') {
-            $campaignData['template_code'] = $inputs['templateCode'];
-        }
-
-        // 알림톡인데 대체 문자 사용하거나 알림톡이 아닌 경우 문자 내용 추가
-        // todo 템플릿 관리 필요
-        if (($messageType === 'alimtalk' && $replaceSms) || $messageType !== 'alimtalk') {
-            $campaignData['sms_title'] = Arr::get($inputs, 'smsTitle');
-            $campaignData['sms_content'] = Arr::get($inputs, 'smsContent');
-        }
-
-        return SiteCampaign::query()->create($campaignData);
-    }
-
-
-    /**
      * 크레딧 차감
      * @throws \Exception
      */
-    private function deductCredits(string $messageType, int $targetCount, int $siteCampaignId): float|int
+    public static function deductCredits(string $creditType, int $targetCount, int $siteCampaignId): float|int
     {
         // 사용 가능한 크레딧 가져와서
         $availableSiteCredits = SiteCredit::query()
@@ -162,7 +90,7 @@ class MessageSendService
         /** @var SiteCredit $siteCredit */
         foreach ($availableSiteCredits as $siteCredit) {
             $balance = $siteCredit->balance_credits;
-            $creditCost = $siteCredit->{"{$messageType}_credits_cost"} ?? 0;
+            $creditCost = $siteCredit->{"{$creditType}_credits_cost"} ?? 0;
 
             // 크레딧 비용이 0보다 작으면 건너 뛴다
             if ($creditCost <= 0) {
@@ -205,7 +133,7 @@ class MessageSendService
                 $siteCredit->siteCreditUsages()->create([
                     'site_campaign_id' => $siteCampaignId,
                     'type' => 1,
-                    'credit_type' => $creditCost,
+                    'credit_type' => $creditType,
                     'used_count' => $deductCount,
                     'used_credits' => $deductCredits,
                     'used_cost' => $usedCost
@@ -225,61 +153,95 @@ class MessageSendService
         return $totalDeductedCredits;
     }
 
-    /**
-     * 개별 메시지 생성
-     */
-    private function createCampaignMessages(int $campaignId, array $contacts): void
+    public static function rechargeCredits(int $siteCampaignId): void
     {
-        $phoneUtil = PhoneNumberUtil::getInstance();
+        DB::transaction(function () use ($siteCampaignId) {
 
-        $messages = [];
-        foreach ($contacts as $contact) {
-            $message = [
-                'site_campaign_id' => $campaignId,
-                'name' => Arr::get($contact, 'name'),
-            ];
-            $phone = $contact['phone'];
-            try {
-                if (strlen($phone) > 16) $phone = substr($phone, -11);
-                $numberProto = $phoneUtil->parse($phone, siteConfigs('default_country', 'KR'));
-                $message['phone_e164'] = $phoneUtil->format($numberProto, PhoneNumberFormat::E164);
-            } catch (NumberParseException $e) {
+            $siteCampaign = SiteCampaign::query()->findOrFail($siteCampaignId);
+            $totalCount = $siteCampaign->total_count;
+            $successCount = $siteCampaign->success_count;
+            $failedCount = $siteCampaign->failed_count;
+            $smsFailedCount = $siteCampaign->sms_failed_count;
+
+            // 차감 기록
+            $siteCampaignUsage = $siteCampaign->siteCreditUsages()->where('type', 1)->first();
+
+            $existingRefund = $siteCampaign->siteCreditUsages()->where('type', -1)->exists();
+            if ($existingRefund) {
+                Log::warning('[크레딧 환급 중복 시도 차단]');
+                return;
             }
-            $messages[] = $message;
-        }
-        foreach ($messages as $messageData) {
-            SiteCampaignMessage::query()->create($messageData); // creating, created 이벤트 발생
-        }
-    }
 
-    /**
-     * 메시지 플랫폼에 발송 요청
-     * @throws \Exception
-     */
-    private function requestToMessagePlatform(SiteCampaign $campaign, \Illuminate\Database\Eloquent\Collection $messages): void
-    {
-        $webhookConfig = $this->buildWebhookConfig($campaign);
+            $totalRechargeCreditAmount = 0;
+            $totalRechargeCount = 0;
 
-        $result = (new MessagePlatformService())->requestToMessagePlatform($campaign, $messages, $webhookConfig);
-        $status = 'PROGRESS';
-        if (Arr::get($result, "message", 'Success') !== "Success") $status = 'FAILED';
-        $campaign->update(['status' => $status]);
-    }
+            // 알림톡인 경우
+            if ($siteCampaign->type === 'alimtalk') {
+                // 환급 및 차감
+                if ($siteCampaign->replace_sms) {
+                    // 카카오 10건 중 카카오 성공 3개 카카오 실패 7개  / 대체 문자 7개 sms 성공 5개  sms 실패 2개
 
-    /**
-     * 웹훅 설정 구성
-     */
-    private function buildWebhookConfig(SiteCampaign $campaign): array
-    {
-        $domain = request()->getHost();
-        $scheme = request()->isSecure() ? 'https' : 'http';
-        $basePath = config('credit-messaging.webhook.base_path', '/api/webhooks/credit-messaging');
+                    // sms 실패 2개 환급
+                    $finalFailCount = $smsFailedCount;
+                    if ($finalFailCount > 0) {
+                        $totalRechargeCount .= $finalFailCount;
+                        $totalRechargeCreditAmount .= round($siteCampaignUsage->used_credits / $siteCampaignUsage->used_count * $finalFailCount, 2);
+                    }
 
-        return [
-            'webhook_url' => "{$scheme}://{$domain}{$basePath}/delivery-status",
-            'webhook_secret' => config('credit-messaging.webhook.secret'),
-            'original_domain' => $domain,
-            'external_campaign_id' => $campaign->id,
-        ];
+                    // 카카오 성공 3개는 sms 3개 환급 후 alimtalk 3개 차감
+                    $revertCount = $successCount;
+                    if ($revertCount > 0) {
+                        $totalRechargeCount .= $revertCount;
+                        $totalRechargeCreditAmount .= round($siteCampaignUsage->used_credits / $siteCampaignUsage->used_count * $revertCount, 2);
+                        //alimltalk으로 차감
+                        CreditManager::deductCredits('alimtalk', $revertCount, $siteCampaignId);
+                    }
+
+                } else {
+                    // 카카오 10건 중 카카오 성공 3개 카카오 실패 7개
+
+                    // 카카오 실패 7개 환급
+                    $finalFailCount = $failedCount;
+                    if ($finalFailCount > 0) {
+                        $totalRechargeCount .= $finalFailCount;
+                        $totalRechargeCreditAmount .= round($siteCampaignUsage->used_credits / $siteCampaignUsage->used_count * $finalFailCount, 2);
+                    }
+                }
+
+            } else {
+                // global, sms
+                $finalFailCount = $totalCount - $successCount;
+                if ($finalFailCount > 0) {
+                    $totalRechargeCount .= $finalFailCount;
+                    $totalRechargeCreditAmount .= round($siteCampaignUsage->used_credits / $siteCampaignUsage->used_count * $finalFailCount, 2);
+                }
+            }
+
+            if ($totalRechargeCreditAmount > 0) {
+                $rechargeSiteCredit = SiteCredit::query()->create([
+                    'type' => 'RECHARGE',
+                    'status' => 'SUCCESS',
+                    'purchase_amount' => 0,
+                    'credits_amount' => $totalRechargeCreditAmount,
+                    'used_credits' => 0,
+                    'balance_credits' => $totalRechargeCreditAmount,
+                    'cost_per_credit' => siteConfigs('site_cost_per_credit'),
+                    'site_alimtalk_credits_cost' => siteConfigs('site_alimtalk_credits_cost'),
+                    'site_sms_credits_cost' => siteConfigs('site_sms_credits_cost'),
+                    'site_lms_credits_cost' => siteConfigs('site_lms_credits_cost'),
+                    'site_mms_credits_cost' => siteConfigs('site_mms_credits_cost'),
+                ]);
+
+                SiteCreditUsage::query()->create([
+                    'type' => -1,
+                    'credit_type' => 'sms',
+                    'site_credit_id' => $rechargeSiteCredit->id,
+                    'site_campaign_id' => $siteCampaign->id,
+                    'used_count' => -$totalRechargeCount,
+                    'used_credits' => -$totalRechargeCreditAmount,
+                    'used_cost' => 0,
+                ]);
+            }
+        });
     }
 }

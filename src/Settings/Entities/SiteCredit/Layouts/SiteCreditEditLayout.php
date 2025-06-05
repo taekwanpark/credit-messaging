@@ -34,7 +34,7 @@ class SiteCreditEditLayout extends Rows
                 ->title(__('Type'))
                 ->options([
                     'CHARGE' => __('CHARGE'),
-                    'REFUND' => __('REFUND')
+                    'RECHARGE' => __('RECHARGE')
                 ])
                 ->value('CHARGE')
                 ->required()
@@ -127,8 +127,6 @@ class SiteCreditEditLayout extends Rows
                 ->readonly(),
 
             Group::make([
-
-
                 Input::make('siteCredit.alimtalk_credits_cost')
                     ->title(__('Alimtalk Credits Cost'))
                     ->mask([

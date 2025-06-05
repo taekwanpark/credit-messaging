@@ -80,6 +80,8 @@ return new class extends Migration {
             $table->string('phone_e164', 16);
             $table->string('name')->nullable();
 
+            $table->string('kakao_status')->nullable();
+            $table->string('sms_status')->nullable();
             $table->string('kakao_result_code')->nullable();
             $table->string('sms_result_code')->nullable();
 

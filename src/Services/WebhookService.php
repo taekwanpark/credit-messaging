@@ -62,7 +62,7 @@ class WebhookService
     /**
      * 발송 결과 웹훅 처리
      */
-    public function processDeliveryStatus(array $data): array
+    public function processDeliveryStatus(array $data)
     {
         return DB::transaction(function () use ($data) {
             $campaignId = $data['campaign_id'] ?? null;
@@ -88,9 +88,7 @@ class WebhookService
             // 웹훅 수신 시간 기록
             $campaign->update(['webhook_received_at' => now()]);
 
-            return [
-                'campaign_id' => $campaignId
-            ];
+            return $campaignId;
         });
     }
 
@@ -100,11 +98,11 @@ class WebhookService
     private function updateMessageStatus(SiteCampaign $siteCampaign, string $phone, array $message): void
     {
         // 메시지 찾기
-        $message = SiteCampaignMessage::query()->where('site_campaign_id', $siteCampaign->id)
+        $siteMessage = SiteCampaignMessage::query()->where('site_campaign_id', $siteCampaign->id)
             ->where('phone_e164', $phone)
             ->first();
 
-        if (!$message) {
+        if (!$siteMessage) {
             Log::warning(__('메시지를 찾을 수 없습니다'), [
                 'campaign_id' => $siteCampaign->id,
                 'phone' => $phone
@@ -112,11 +110,11 @@ class WebhookService
             return;
         }
 
-        $message->setAttribute('kakao_status', Arr::get($message, 'kakao_status', null));
-        $message->setAttribute('sms_status', Arr::get($message, 'sms_status', null));
-        $message->setAttribute('kakao_result_code', Arr::get($message, 'kakao_result_code', null));
-        $message->setAttribute('sms_result_code', Arr::get($message, 'sms_result_code', null));
-        $message->save();
+        $siteMessage->setAttribute('kakao_status', Arr::get($message, 'kakao_status', null));
+        $siteMessage->setAttribute('sms_status', Arr::get($message, 'sms_status', null));
+        $siteMessage->setAttribute('kakao_result_code', Arr::get($message, 'kakao_result_code', null));
+        $siteMessage->setAttribute('sms_result_code', Arr::get($message, 'sms_result_code', null));
+        $siteMessage->save();
     }
 
     /**
