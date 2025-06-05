@@ -14,7 +14,6 @@ use libphonenumber\PhoneNumberUtil;
 use Techigh\CreditMessaging\Facades\CreditHandler;
 use Techigh\CreditMessaging\Settings\Entities\SiteCampaign\SiteCampaign;
 use Techigh\CreditMessaging\Settings\Entities\SiteCampaignMessage\SiteCampaignMessage;
-use Techigh\CreditMessaging\Settings\Entities\SiteCredit\SiteCredit;
 
 class MessageSendService
 {

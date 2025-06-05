@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
+use Techigh\CreditMessaging\Facades\CreditHandler;
 use Techigh\CreditMessaging\Services\CreditManager;
 use Techigh\CreditMessaging\Services\WebhookService;
 
@@ -35,7 +36,7 @@ class WebhookController extends Controller
             // 웹훅 데이터 처리
             $campaignId = $this->webhookService->processDeliveryStatus($request->all());
 
-            CreditManager::rechargeCredits($campaignId);
+            CreditHandler::rechargeCredits($campaignId);
 
         } catch (Exception $e) {
             Log::error(__('웹훅 처리 실패'), [
