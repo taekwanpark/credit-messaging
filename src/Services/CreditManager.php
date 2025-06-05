@@ -5,14 +5,9 @@ declare(strict_types=1);
 namespace Techigh\CreditMessaging\Services;
 
 use Illuminate\Support\Arr;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use libphonenumber\NumberParseException;
-use libphonenumber\PhoneNumberFormat;
-use libphonenumber\PhoneNumberUtil;
 use Techigh\CreditMessaging\Settings\Entities\SiteCampaign\SiteCampaign;
-use Techigh\CreditMessaging\Settings\Entities\SiteCampaignMessage\SiteCampaignMessage;
 use Techigh\CreditMessaging\Settings\Entities\SiteCredit\SiteCredit;
 use Techigh\CreditMessaging\Settings\Entities\SiteCreditUsage\SiteCreditUsage;
 
@@ -24,7 +19,7 @@ class CreditManager
      * @param $inputs
      * @return string
      */
-    public static function getCreditType($inputs): string
+    public function getCreditType($inputs): string
     {
         $replaceSms = Arr::get($inputs, 'type', 'alimtalk') === 'alimtalk' ? Arr::get($inputs, 'replaceSms', true) : false;
         return match (true) {
@@ -38,7 +33,7 @@ class CreditManager
      * 크레딧 검증
      * @throws \Exception
      */
-    public static function validateCredits(string $creditType, int $targetCount): void
+    public function validateCredits(string $creditType, int $targetCount): void
     {
         // 사용 가능한 siteCredit 가져오기
         $availableSiteCredits = SiteCredit::query()
@@ -62,7 +57,7 @@ class CreditManager
         $totalSendableCount = floor($totalSendableCount);
         // 발송 해야할 수량과 발송 가능한 수량 비교
         if ($targetCount > $totalSendableCount) {
-            throw new \Exception("크레딧이 부족합니다. 발송 가능 수량: {$totalSendableCount}");
+            throw new \Exception(__('크레딧이 부족합니다. 발송 가능 수량: :count', ['count' => $totalSendableCount]));
         }
     }
 
@@ -71,7 +66,7 @@ class CreditManager
      * 크레딧 차감
      * @throws \Exception
      */
-    public static function deductCredits(string $creditType, int $targetCount, int $siteCampaignId): float|int
+    public function deductCredits(string $creditType, int $targetCount, int $siteCampaignId): float|int
     {
         // 사용 가능한 크레딧 가져와서
         $availableSiteCredits = SiteCredit::query()
@@ -81,45 +76,46 @@ class CreditManager
 
         DB::beginTransaction();
 
-        // 총 차감된 크레딧 개수
-        $totalDeductedCredits = 0;
+        try {
+            // 총 차감된 크레딧 개수
+            $totalDeductedCredits = 0;
 
-        // 차감해야하는 개수
-        $remainingCount = $targetCount;
+            // 차감해야하는 개수
+            $remainingCount = $targetCount;
 
-        /** @var SiteCredit $siteCredit */
-        foreach ($availableSiteCredits as $siteCredit) {
-            $balance = $siteCredit->balance_credits;
-            $creditCost = $siteCredit->{"{$creditType}_credits_cost"} ?? 0;
+            /** @var SiteCredit $siteCredit */
+            foreach ($availableSiteCredits as $siteCredit) {
+                $balance = $siteCredit->balance_credits;
+                $creditCost = $siteCredit->{"{$creditType}_credits_cost"} ?? 0;
 
-            // 크레딧 비용이 0보다 작으면 건너 뛴다
-            if ($creditCost <= 0) {
-                Log::channel('credit')->warning('[크레딧 차감/사용] - 스킵(단가 이상)', [
-                    'credit_id' => $siteCredit->getKey(),
-                    'cost' => $creditCost
-                ]);
-                continue;
-            }
+                // 크레딧 비용이 0보다 작으면 건너 뛴다
+                if ($creditCost <= 0) {
+                    Log::warning('[크레딧 차감] 단가 이상으로 스킵', [
+                        'credit_id' => $siteCredit->getKey(),
+                        'cost' => $creditCost
+                    ]);
+                    continue;
+                }
 
-            // 해당 크레딧으로 발송 가능한 최대 메세지 건수 - 내림으로 계산
-            $maxSendableCount = floor($balance / $creditCost);
+                // 해당 크레딧으로 발송 가능한 최대 메세지 건수 - 내림으로 계산
+                $maxSendableCount = floor($balance / $creditCost);
 
-            // 발송 가능한 최대 메세지 건수가 1보다 작을 경우 건너 띈다
-            if ($maxSendableCount < 1) {
-                // todo 나중에 집계해서 1크레딧으로 환급
-                Log::channel('credit')->warning('[크레딧 차감/사용] - 불가(잔액 부족)', [
-                    'credit_id' => $siteCredit->getKey(),
-                    'balance' => $balance,
-                    'cost' => $creditCost
-                ]);
-                continue;
-            }
+                // 발송 가능한 최대 메세지 건수가 1보다 작을 경우 건너 띈다
+                if ($maxSendableCount < 1) {
+                    // todo 나중에 집계해서 1크레딧으로 환급
+                    Log::warning('[크레딧 차감] 잔액 부족으로 불가', [
+                        'credit_id' => $siteCredit->getKey(),
+                        'balance' => $balance,
+                        'cost' => $creditCost
+                    ]);
+                    continue;
+                }
 
-            // 차감 개수 = 발송 가능한 최대 메세지 건수, 남은 발송 건수 비교하여 작은 건수 사용
-            $deductCount = min($maxSendableCount, $remainingCount);
-            // 차감 크레딧 = 차감 개수 * 해당 크레딧의 type 1건 발송 비용
-            $deductCredits = $deductCount * $creditCost;
-            try {
+                // 차감 개수 = 발송 가능한 최대 메세지 건수, 남은 발송 건수 비교하여 작은 건수 사용
+                $deductCount = min($maxSendableCount, $remainingCount);
+                // 차감 크레딧 = 차감 개수 * 해당 크레딧의 type 1건 발송 비용
+                $deductCredits = $deductCount * $creditCost;
+
                 // 해당 크레딧을 업데이트 한다
                 $siteCredit->update([
                     'used_credits' => $siteCredit->used_credits + $deductCredits,
@@ -138,22 +134,28 @@ class CreditManager
                     'used_credits' => $deductCredits,
                     'used_cost' => $usedCost
                 ]);
-            } catch (\Exception $exception) {
-                throw new \Exception(__('Credit Exception'));
+
+                // 남아있는 개수 = 기존 남아있는 개수 - 차감된 개수
+                $remainingCount -= $deductCount;
+                // 총 차감 크레딧 = 기존 총 차감 크레딧 + 차감 크레딧
+                $totalDeductedCredits += $deductCredits;
+
+                if ($remainingCount < 1) break;
             }
-            // 남아있는 개수 = 기존 남아있는 개수 - 차감된 개수
-            $remainingCount -= $deductCount;
-            // 총 차감 크레딧 = 기존 총 차감 크레딧 + 차감 크레딧
-            $totalDeductedCredits += $deductCredits;
 
-            if ($remainingCount < 1) break;
+            DB::commit();
+            return $totalDeductedCredits;
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            Log::error('[크레딧 차감] 실패', [
+                'error' => $exception->getMessage(),
+                'site_campaign_id' => $siteCampaignId
+            ]);
+            throw new \Exception(__('크레딧 차감 중 오류가 발생했습니다.'));
         }
-        DB::commit();
-
-        return $totalDeductedCredits;
     }
 
-    public static function rechargeCredits(int $siteCampaignId): void
+    public function rechargeCredits(int $siteCampaignId): void
     {
         DB::transaction(function () use ($siteCampaignId) {
 
@@ -168,7 +170,9 @@ class CreditManager
 
             $existingRefund = $siteCampaign->siteCreditUsages()->where('type', -1)->exists();
             if ($existingRefund) {
-                Log::warning('[크레딧 환급 중복 시도 차단]');
+                Log::warning('[크레딧 환급] 중복 시도 차단', [
+                    'site_campaign_id' => $siteCampaignId
+                ]);
                 return;
             }
 
@@ -184,36 +188,34 @@ class CreditManager
                     // sms 실패 2개 환급
                     $finalFailCount = $smsFailedCount;
                     if ($finalFailCount > 0) {
-                        $totalRechargeCount .= $finalFailCount;
-                        $totalRechargeCreditAmount .= round($siteCampaignUsage->used_credits / $siteCampaignUsage->used_count * $finalFailCount, 2);
+                        $totalRechargeCount += $finalFailCount;
+                        $totalRechargeCreditAmount += round($siteCampaignUsage->used_credits / $siteCampaignUsage->used_count * $finalFailCount, 2);
                     }
 
                     // 카카오 성공 3개는 sms 3개 환급 후 alimtalk 3개 차감
                     $revertCount = $successCount;
                     if ($revertCount > 0) {
-                        $totalRechargeCount .= $revertCount;
-                        $totalRechargeCreditAmount .= round($siteCampaignUsage->used_credits / $siteCampaignUsage->used_count * $revertCount, 2);
+                        $totalRechargeCount += $revertCount;
+                        $totalRechargeCreditAmount += round($siteCampaignUsage->used_credits / $siteCampaignUsage->used_count * $revertCount, 2);
                         //alimltalk으로 차감
-                        CreditManager::deductCredits('alimtalk', $revertCount, $siteCampaignId);
+                        self::deductCredits('alimtalk', $revertCount, $siteCampaignId);
                     }
-
                 } else {
                     // 카카오 10건 중 카카오 성공 3개 카카오 실패 7개
 
                     // 카카오 실패 7개 환급
                     $finalFailCount = $failedCount;
                     if ($finalFailCount > 0) {
-                        $totalRechargeCount .= $finalFailCount;
-                        $totalRechargeCreditAmount .= round($siteCampaignUsage->used_credits / $siteCampaignUsage->used_count * $finalFailCount, 2);
+                        $totalRechargeCount += $finalFailCount;
+                        $totalRechargeCreditAmount += round($siteCampaignUsage->used_credits / $siteCampaignUsage->used_count * $finalFailCount, 2);
                     }
                 }
-
             } else {
                 // global, sms
                 $finalFailCount = $totalCount - $successCount;
                 if ($finalFailCount > 0) {
-                    $totalRechargeCount .= $finalFailCount;
-                    $totalRechargeCreditAmount .= round($siteCampaignUsage->used_credits / $siteCampaignUsage->used_count * $finalFailCount, 2);
+                    $totalRechargeCount += $finalFailCount;
+                    $totalRechargeCreditAmount += round($siteCampaignUsage->used_credits / $siteCampaignUsage->used_count * $finalFailCount, 2);
                 }
             }
 
@@ -240,6 +242,12 @@ class CreditManager
                     'used_count' => -$totalRechargeCount,
                     'used_credits' => -$totalRechargeCreditAmount,
                     'used_cost' => 0,
+                ]);
+
+                Log::info('[크레딧 환급] 완료', [
+                    'site_campaign_id' => $siteCampaignId,
+                    'recharge_count' => $totalRechargeCount,
+                    'recharge_amount' => $totalRechargeCreditAmount
                 ]);
             }
         });

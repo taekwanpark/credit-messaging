@@ -8,6 +8,7 @@ use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Client\PendingRequest;
 use Techigh\CreditMessaging\Settings\Entities\SiteCampaign\SiteCampaign;
 use Techigh\CreditMessaging\Settings\Entities\SiteCampaignMessage\SiteCampaignMessage;
@@ -117,11 +118,22 @@ class MessagePlatformService
 
             if ($response->failed()) {
                 $error = $response->json('message') ?? __('토큰 발급에 실패했습니다.');
+
+                Log::error('[메시지 플랫폼] 토큰 발급 실패', [
+                    'status' => $response->status(),
+                    'error' => $error
+                ]);
+
                 throw new Exception($error);
             }
 
             $this->token = $response->json('data.token') ?? throw new Exception(__('토큰을 받지 못했습니다.'));
+
+            Log::info('[메시지 플랫폼] 인증 성공');
         } catch (Exception $e) {
+            Log::error('[메시지 플랫폼] 인증 실패', [
+                'error' => $e->getMessage()
+            ]);
             throw new Exception(__('메시지 플랫폼 인증에 실패했습니다: :error', ['error' => $e->getMessage()]));
         }
 
@@ -167,6 +179,12 @@ class MessagePlatformService
             // 웹훅 정보 추가
             $payload['webhooks'] = $webhookConfig;
 
+            Log::info('[메시지 플랫폼] 발송 요청 시작', [
+                'campaign_id' => $campaign->id,
+                'message_count' => $messages->count(),
+                'type' => $campaign->type
+            ]);
+
             $response = $this->client->replaceHeaders(
                 $this->headers + [
                     'Authorization' => $this->makeBearerAuthorization(),
@@ -177,11 +195,28 @@ class MessagePlatformService
                 $errorData = $response->json() ?? [];
                 $errorMessage = $errorData['message'] ?? __('발송 요청에 실패했습니다.');
 
+                Log::error('[메시지 플랫폼] 발송 요청 실패', [
+                    'campaign_id' => $campaign->id,
+                    'status' => $response->status(),
+                    'error' => $errorMessage
+                ]);
+
                 throw new Exception($errorMessage);
             }
 
-            return $response->json();
+            $responseData = $response->json();
+
+            Log::info('[메시지 플랫폼] 발송 요청 성공', [
+                'campaign_id' => $campaign->id,
+                'response_message' => $responseData['message'] ?? 'Success'
+            ]);
+
+            return $responseData;
         } catch (Exception $e) {
+            Log::error('[메시지 플랫폼] 발송 요청 예외', [
+                'campaign_id' => $campaign->id,
+                'error' => $e->getMessage()
+            ]);
             throw $e;
         }
     }
@@ -213,7 +248,7 @@ class MessagePlatformService
             'at' => $campaign->send_at->toISOString(),
             'smsSubject' => $campaign->sms_title,
             'smsContent' => $campaign->sms_content,
-            'scheduleType' => Carbon::parse($campaign->send_at)->isFuture() ? 'DIRECTLY' : 'RESERVED'
+            'scheduleType' => Carbon::parse($campaign->send_at)->isFuture() ? 'RESERVED' : 'DIRECTLY'
         ];
     }
 

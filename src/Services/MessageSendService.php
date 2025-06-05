@@ -46,54 +46,6 @@ class MessageSendService
     }
 
     /**
-     * 크레딧 차감 유형 결정
-     * @param $inputs
-     * @return string
-     */
-    private function getCreditType($inputs): string
-    {
-        $replaceSms = Arr::get($inputs, 'type', 'alimtalk') === 'alimtalk' ? Arr::get($inputs, 'replaceSms', true) : false;
-        return match (true) {
-            $replaceSms && strlen($inputs['smsContent']) >= 90 => 'lms',
-            $replaceSms => 'sms',
-            default => 'alimtalk',
-        };
-    }
-
-    /**
-     * 크레딧 검증
-     * @throws \Exception
-     */
-    private function validateCredits(string $messageType, int $targetCount): void
-    {
-        // 사용 가능한 siteCredit 가져오기
-        $availableSiteCredits = SiteCredit::query()
-            ->where('status', 'SUCCESS')
-            ->where('balance_credits', '>', 0)
-            ->get();
-
-        // 발송 가능한 수량
-        $totalSendableCount = 0;
-        $availableSiteCredits->each(function (SiteCredit $siteCredit) use (&$totalSendableCount, $messageType) {
-            $balance = $siteCredit->balance_credits;
-            $creditCost = $siteCredit->{"{$messageType}_credits_cost"} ?? 0;
-
-            if ($creditCost > 0) $sendableCount = $balance / $creditCost;
-            else $sendableCount = 0;
-
-            $totalSendableCount += $sendableCount;
-        });
-
-        // 숫자 내림 처리
-        $totalSendableCount = floor($totalSendableCount);
-        // 발송 해야할 수량과 발송 가능한 수량 비교
-        if ($targetCount > $totalSendableCount) {
-            throw new \Exception("크레딧이 부족합니다. 발송 가능 수량: {$totalSendableCount}");
-        }
-    }
-
-
-    /**
      * 캠페인 생성
      */
     private function createCampaign(array $inputs): SiteCampaign
@@ -140,92 +92,6 @@ class MessageSendService
 
 
     /**
-     * 크레딧 차감
-     * @throws \Exception
-     */
-    private function deductCredits(string $messageType, int $targetCount, int $siteCampaignId): float|int
-    {
-        // 사용 가능한 크레딧 가져와서
-        $availableSiteCredits = SiteCredit::query()
-            ->where('status', 'SUCCESS')
-            ->where('balance_credits', '>', 0)
-            ->get();
-
-        DB::beginTransaction();
-
-        // 총 차감된 크레딧 개수
-        $totalDeductedCredits = 0;
-
-        // 차감해야하는 개수
-        $remainingCount = $targetCount;
-
-        /** @var SiteCredit $siteCredit */
-        foreach ($availableSiteCredits as $siteCredit) {
-            $balance = $siteCredit->balance_credits;
-            $creditCost = $siteCredit->{"{$messageType}_credits_cost"} ?? 0;
-
-            // 크레딧 비용이 0보다 작으면 건너 뛴다
-            if ($creditCost <= 0) {
-                Log::channel('credit')->warning('[크레딧 차감/사용] - 스킵(단가 이상)', [
-                    'credit_id' => $siteCredit->getKey(),
-                    'cost' => $creditCost
-                ]);
-                continue;
-            }
-
-            // 해당 크레딧으로 발송 가능한 최대 메세지 건수 - 내림으로 계산
-            $maxSendableCount = floor($balance / $creditCost);
-
-            // 발송 가능한 최대 메세지 건수가 1보다 작을 경우 건너 띈다
-            if ($maxSendableCount < 1) {
-                // todo 나중에 집계해서 1크레딧으로 환급
-                Log::channel('credit')->warning('[크레딧 차감/사용] - 불가(잔액 부족)', [
-                    'credit_id' => $siteCredit->getKey(),
-                    'balance' => $balance,
-                    'cost' => $creditCost
-                ]);
-                continue;
-            }
-
-            // 차감 개수 = 발송 가능한 최대 메세지 건수, 남은 발송 건수 비교하여 작은 건수 사용
-            $deductCount = min($maxSendableCount, $remainingCount);
-            // 차감 크레딧 = 차감 개수 * 해당 크레딧의 type 1건 발송 비용
-            $deductCredits = $deductCount * $creditCost;
-            try {
-                // 해당 크레딧을 업데이트 한다
-                $siteCredit->update([
-                    'used_credits' => $siteCredit->used_credits + $deductCredits,
-                    'balance_credits' => $siteCredit->balance_credits - $deductCredits,
-                ]);
-
-                // 사용 금액 = 1크레딧 비용 * 차감된 크레딧 개수
-                $usedCost = $siteCredit->getAttribute('cost_per_credit') * $deductCredits;
-
-                // 크레딧 사용량 생성(사용)
-                $siteCredit->siteCreditUsages()->create([
-                    'site_campaign_id' => $siteCampaignId,
-                    'type' => 1,
-                    'credit_type' => $creditCost,
-                    'used_count' => $deductCount,
-                    'used_credits' => $deductCredits,
-                    'used_cost' => $usedCost
-                ]);
-            } catch (\Exception $exception) {
-                throw new \Exception(__('Credit Exception'));
-            }
-            // 남아있는 개수 = 기존 남아있는 개수 - 차감된 개수
-            $remainingCount -= $deductCount;
-            // 총 차감 크레딧 = 기존 총 차감 크레딧 + 차감 크레딧
-            $totalDeductedCredits += $deductCredits;
-
-            if ($remainingCount < 1) break;
-        }
-        DB::commit();
-
-        return $totalDeductedCredits;
-    }
-
-    /**
      * 개별 메시지 생성
      */
     private function createCampaignMessages(int $campaignId, array $contacts): void
@@ -244,6 +110,10 @@ class MessageSendService
                 $numberProto = $phoneUtil->parse($phone, siteConfigs('default_country', 'KR'));
                 $message['phone_e164'] = $phoneUtil->format($numberProto, PhoneNumberFormat::E164);
             } catch (NumberParseException $e) {
+                Log::warning('[전화번호 파싱 실패]', [
+                    'phone' => $phone,
+                    'error' => $e->getMessage()
+                ]);
             }
             $messages[] = $message;
         }

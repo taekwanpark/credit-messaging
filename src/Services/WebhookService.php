@@ -86,7 +86,12 @@ class WebhookService
             }
 
             // 웹훅 수신 시간 기록
-            $campaign->update(['webhook_received_at' => now()]);
+            $siteCampaign->update(['webhook_received_at' => now()]);
+
+            Log::info('[웹훅 처리] 완료', [
+                'campaign_id' => $campaignId,
+                'message_count' => count($messages)
+            ]);
 
             return $campaignId;
         });
@@ -153,6 +158,12 @@ class WebhookService
 
         try {
             $this->processDeliveryStatus($data);
+
+            Log::info(__('웹훅 재시도 성공'), [
+                'campaign_id' => $campaignId,
+                'attempt' => $attemptNumber
+            ]);
+
             return true;
         } catch (Exception $e) {
             Log::error(__('웹훅 재시도 실패'), [
