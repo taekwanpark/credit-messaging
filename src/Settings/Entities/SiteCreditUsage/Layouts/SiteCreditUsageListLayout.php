@@ -87,8 +87,7 @@ class SiteCreditUsageListLayout extends Table
                 ->sort()
                 ->render(function (SiteCreditUsage $siteCreditUsage) {
                     $class = $siteCreditUsage->type === 1 ? 'text-danger' : 'text-success';
-                    $prefix = $siteCreditUsage->type === 1 ? '-' : '+';
-                    return "<span class='{$class}'>{$prefix}" . number_format($siteCreditUsage->used_credits, 2) . "</span>";
+                    return "<span class='{$class}'>" . number_format($siteCreditUsage->used_credits, 2) . "</span>";
                 }),
 
             TD::make('used_cost', __('Used Cost'))
@@ -96,8 +95,7 @@ class SiteCreditUsageListLayout extends Table
                 ->sort()
                 ->render(function (SiteCreditUsage $siteCreditUsage) {
                     $class = $siteCreditUsage->type === 1 ? 'text-danger' : 'text-success';
-                    $prefix = $siteCreditUsage->type === 1 ? '-' : '+';
-                    return "<span class='{$class}'>{$prefix}" . number_format($siteCreditUsage->used_cost, 2) . "원</span>";
+                    return "<span class='{$class}'>" . number_format($siteCreditUsage->used_cost, 2) . "원</span>";
                 }),
 
             TD::make('created_at_formatted', __('Created'))
