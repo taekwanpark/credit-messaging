@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Techigh\CreditMessaging\Services;
 
 use Exception;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\PendingRequest;
 use Techigh\CreditMessaging\Settings\Entities\SiteCampaign\SiteCampaign;
+use Techigh\CreditMessaging\Settings\Entities\SiteCampaignMessage\SiteCampaignMessage;
 
 class MessagePlatformService
 {
@@ -153,14 +155,14 @@ class MessagePlatformService
     /**
      * 메시지 플랫폼에 발송 요청
      */
-    public function requestToMessagePlatform(SiteCampaign $campaign, array $contacts, array $webhookConfig = []): array
+    public function requestToMessagePlatform(SiteCampaign $campaign, \Illuminate\Database\Eloquent\Collection $messages, array $webhookConfig = []): array
     {
         if (!$this->validateToken()) {
             throw new Exception(__('유효하지 않은 토큰입니다.'));
         }
 
         try {
-            $payload = $this->buildPayload($campaign, $contacts);
+            $payload = $this->buildPayload($campaign, $messages);
 
             // 웹훅 정보 추가
             $payload['webhooks'] = $webhookConfig;
@@ -195,7 +197,7 @@ class MessagePlatformService
     /**
      * 발송 페이로드 구성
      */
-    private function buildPayload(SiteCampaign $campaign, array $contacts): array
+    private function buildPayload(SiteCampaign $campaign, \Illuminate\Database\Eloquent\Collection $messages): array
     {
 
         if (!$this->validateSenderKeys()) {
@@ -207,7 +209,7 @@ class MessagePlatformService
             'senderKey' => $this->senderKey,
             'replaceSms' => $campaign->replace_sms ? 'Y' : 'N',
             'templateCode' => $campaign->template_code,
-            'contacts' => $this->formatContacts($contacts),
+            'contacts' => $this->formatContacts($messages),
             'at' => $campaign->send_at->toISOString(),
             'smsSubject' => $campaign->sms_title,
             'smsContent' => $campaign->sms_content,
@@ -218,18 +220,17 @@ class MessagePlatformService
     /**
      * 연락처 정보 포맷팅
      */
-    private function formatContacts(array $contacts): array
+    private function formatContacts(\Illuminate\Database\Eloquent\Collection $messages): array
     {
         $formatted = [];
-
-        foreach ($contacts as $contact) {
+        $messages->map(function ($message) use (&$formatted) {
+            /** @var SiteCampaignMessage $message */
             $formattedContact = [
-                'contact' => $contact['phone'] ?? $contact['phone_e164'] ?? '',
-                'name' => $contact['name'] ?? '',
+                'contact' => $message->phone_e164,
+                'name' => $message->name,
             ];
-
             $formatted[] = $formattedContact;
-        }
+        });
 
         return $formatted;
     }

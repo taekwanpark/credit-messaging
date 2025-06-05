@@ -255,11 +255,11 @@ class MessageSendService
      * 메시지 플랫폼에 발송 요청
      * @throws \Exception
      */
-    private function requestToMessagePlatform(SiteCampaign $campaign, array $contacts): void
+    private function requestToMessagePlatform(SiteCampaign $campaign, \Illuminate\Database\Eloquent\Collection $messages): void
     {
         $webhookConfig = $this->buildWebhookConfig($campaign);
 
-        $result = (new MessagePlatformService())->requestToMessagePlatform($campaign, $contacts, $webhookConfig);
+        $result = (new MessagePlatformService())->requestToMessagePlatform($campaign, $messages, $webhookConfig);
         $status = 'PROGRESS';
         if (Arr::get($result, "message", 'Success') !== "Success") $status = 'FAILED';
         $campaign->update(['status' => $status]);
