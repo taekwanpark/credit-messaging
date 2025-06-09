@@ -120,7 +120,6 @@ class SiteCreditUsageEditScreen extends Screen
     /**
      * Remove the SiteCreditUsage.
      *
-     * @param \SiteCreditUsage\SiteCreditUsage $siteCreditUsage
      */
     public function remove(SiteCreditUsage $siteCreditUsage)
     {

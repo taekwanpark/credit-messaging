@@ -120,7 +120,6 @@ class SiteCampaignEditScreen extends Screen
     /**
      * Remove the SiteCampaign.
      *
-     * @param \SiteCampaign\SiteCampaign $siteCampaign
      */
     public function remove(SiteCampaign $siteCampaign)
     {

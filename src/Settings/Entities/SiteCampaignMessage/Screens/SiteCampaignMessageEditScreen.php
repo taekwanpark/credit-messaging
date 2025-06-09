@@ -120,7 +120,6 @@ class SiteCampaignMessageEditScreen extends Screen
     /**
      * Remove the SiteCampaignMessage.
      *
-     * @param \SiteCampaignMessage\SiteCampaignMessage $siteCampaignMessage
      */
     public function remove(SiteCampaignMessage $siteCampaignMessage)
     {
