@@ -15,14 +15,16 @@ class CreditMessagingServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Merge configuration
-        $this->mergeConfigFrom(__DIR__ . '/../../config/credit-messaging.php', 'credit-messaging');
+        if (config('smpp-provider.use_credit_messaging', false) === true) {
+            // Merge configuration
+            $this->mergeConfigFrom(__DIR__ . '/../../config/credit-messaging.php', 'credit-messaging');
 
-        // Load translations
-        $this->loadJsonTranslationsFrom(__DIR__ . '/../../resources/lang');
+            // Load translations
+            $this->loadJsonTranslationsFrom(__DIR__ . '/../../resources/lang');
 
-        // Register core services as singletons
-        $this->registerCoreServices();
+            // Register core services as singletons
+            $this->registerCoreServices();
+        }
     }
 
     /**
@@ -46,23 +48,26 @@ class CreditMessagingServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Register commands first (before other boot operations)
-        $this->registerCommands();
+        if (config('smpp-provider.use_credit_messaging', false) === true) {
 
-        // Publish configuration files
-        $this->publishConfigurations();
+            // Register commands first (before other boot operations)
+            $this->registerCommands();
 
-        // Publish database files  
-        $this->publishDatabaseFiles();
+            // Publish configuration files
+            $this->publishConfigurations();
 
-        // Load package resources
-        $this->loadPackageResources();
+            // Publish database files
+            $this->publishDatabaseFiles();
 
-        // Register API routes
-        $this->registerRoutes();
+            // Load package resources
+            $this->loadPackageResources();
 
-        // register Site configs
-        $this->registerSiteConfigs();
+            // Register API routes
+            $this->registerRoutes();
+
+            // register Site configs
+            $this->registerSiteConfigs();
+        }
     }
 
     /**
