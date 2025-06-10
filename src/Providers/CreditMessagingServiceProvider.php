@@ -67,6 +67,11 @@ class CreditMessagingServiceProvider extends ServiceProvider
 
             // register Site configs
             $this->registerSiteConfigs();
+
+            // register blades
+            $this->loadViewsFrom(__DIR__ . '/../Settings/resources/views', 'crm');
+            $this->loadJsonTranslationsFrom(__DIR__ . '/../Settings/resources/lang');
+
         }
     }
 

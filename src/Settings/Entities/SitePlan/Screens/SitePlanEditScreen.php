@@ -2,15 +2,18 @@
 
 namespace Techigh\CreditMessaging\Settings\Entities\SitePlan\Screens;
 
-use App\Settings\Entities\Tenant\Layouts\TenantListLayout;
 use App\Settings\Entities\Tenant\Tenant;
 use App\Settings\Entities\User\User;
 use App\Settings\Extends\OrbitLayout;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Orchid\Screen\Actions\Button;
+use Orchid\Screen\Components\Cells\DateTimeSplit;
 use Orchid\Screen\Screen;
+use Orchid\Screen\TD;
 use Orchid\Support\Color;
+use Orchid\Support\Facades\Layout;
 use Orchid\Support\Facades\Toast;
 use Techigh\CreditMessaging\Settings\Entities\SitePlan\Layouts\SitePlanEditLayout;
 use Techigh\CreditMessaging\Settings\Entities\SitePlan\SitePlan;
@@ -29,9 +32,11 @@ class SitePlanEditScreen extends Screen
      */
     public function query(SitePlan $sitePlan): iterable
     {
+        $sitePlan->load('tenants'); // eager loading
+
         return [
             'sitePlan' => $sitePlan,
-            'tenants' => $sitePlan->tenants()->paginate(20)
+            'tenants' => $sitePlan->tenants()->paginate(20),
         ];
     }
 
@@ -89,8 +94,25 @@ class SitePlanEditScreen extends Screen
                         ->canSee($this->sitePlan->exists)
                         ->method('save')
                 ),
-            (new TenantListLayout())
-                ->title(__('Tenants'))
+
+            Layout::block(
+                Layout::table('tenants', [
+                    TD::make('title', __('Title')),
+                    TD::make('created_at', __('Created'))
+                        ->usingComponent(DateTimeSplit::class)
+                        ->align(TD::ALIGN_RIGHT)
+                        ->width(100),
+
+                    TD::make(__('Actions'))
+                        ->align(TD::ALIGN_CENTER)
+                        ->width('100px')
+                        ->render(function (Tenant $tenant) {
+                            return Button::make(__('Dissociate'))
+                                ->icon('bs.x')
+                                ->method('dissociate', ['tenant' => $tenant]);
+                        }),
+                ])
+            )->title(__('Tenants'))
         ];
     }
 
@@ -118,16 +140,21 @@ class SitePlanEditScreen extends Screen
         $sitePlan->fill($request->input('sitePlan'));
         $sitePlan->save();
 
-        $tenants = $request->input('sitePlanTenants');
-        if (!empty($tenants)) {
-            collect($tenants)->each(function ($tenant) use ($sitePlan) {
-                $tenant = Tenant::find($tenant);
-                $tenant->sitePlan()->associate($sitePlan);
+        $tenantIds = $request->input('tenantIds');
+
+        if (!empty($tenantIds)) {
+            collect($tenantIds)->filter()->each(function ($tenantId) use ($sitePlan) {
+                /** @var Tenant $tenant */
+                $tenant = Tenant::find($tenantId);
+                if ($tenant) {
+                    $tenant->sitePlan()->associate($sitePlan);
+                    $tenant->save(); // 저장 필수
+                }
             });
         }
         Toast::info(__('SitePlan was saved.'));
 
-        return redirect()->route('settings.entities.site_plans');
+        return redirect()->route('settings.entities.site_plans.edit', $sitePlan);
     }
 
     /**
@@ -147,5 +174,15 @@ class SitePlanEditScreen extends Screen
         }
 
         return redirect()->route('settings.entities.site_plans');
+    }
+
+    public function dissociate(Request $request, SitePlan $sitePlan, Tenant $tenant): RedirectResponse
+    {
+        $tenant->sitePlan()->dissociate();
+        $tenant->save();
+
+        Toast::info(__('Tenant was dissociated.'));
+
+        return redirect()->route('settings.entities.site_plans.edit', $sitePlan);
     }
 }

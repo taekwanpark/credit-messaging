@@ -27,4 +27,5 @@ class SitePlan extends DynamicModel
     {
         return $this->hasMany(Tenant::class);
     }
+    
 }

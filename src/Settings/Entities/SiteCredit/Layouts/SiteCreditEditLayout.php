@@ -19,6 +19,8 @@ class SiteCreditEditLayout extends Rows
      */
     public function fields(): array
     {
+
+        $showCreditAttributes = $this->query->get('siteCredit.order_id') !== null;
         return [
             Input::make('siteCredit.id')
                 ->type('hidden'),
@@ -28,7 +30,7 @@ class SiteCreditEditLayout extends Rows
                 ->placeholder(__('Enter order ID'))
                 ->help(__('Unique order identifier'))
                 ->readonly()
-                ->canSee($this->query->get('siteCredit.order_id') !== null),
+                ->canSee($showCreditAttributes),
 
             Select::make('siteCredit.type')
                 ->title(__('Type'))
@@ -36,9 +38,10 @@ class SiteCreditEditLayout extends Rows
                     'CHARGE' => __('CHARGE'),
                     'RECHARGE' => __('RECHARGE')
                 ])
+                ->disabled()
                 ->value('CHARGE')
                 ->required()
-                ->canSee($this->query->get('siteCredit.order_id') !== null),
+                ->canSee($showCreditAttributes),
 
             Select::make('siteCredit.status')
                 ->title(__('Status'))
@@ -48,68 +51,77 @@ class SiteCreditEditLayout extends Rows
                     'CANCELLED' => __('CANCELLED')
                 ])
                 ->value('PENDING')
+                ->disabled()
                 ->required()
-                ->canSee($this->query->get('siteCredit.order_id') !== null),
+                ->canSee($showCreditAttributes),
 
-            Input::make('siteCredit.purchase_amount')
-                ->title(__('Purchase Amount'))
-                ->mask([
-                    'alias' => 'currency',
-                    'groupSeparator' => ',',
-                    'digitsOptional' => true,
-                    'allowMinus' => false,
-                    'removeMaskOnSubmit' => true,
-                ])
-                ->required()
-                ->placeholder(__('Enter purchase amount'))
-                ->help(__('Purchase Amount')),
+            Group::make([
 
-            Input::make('siteCredit.credits_amount')
-                ->title(__('Credits Amount'))
-                ->mask([
-                    'alias' => 'decimal',
-                    'digits' => 2,
-                    'prefix' => '©',
-                    'groupSeparator' => ',',
-                    'digitsOptional' => true,
-                    'allowMinus' => false,
-                    'removeMaskOnSubmit' => true,
-                ])
-                ->required()
-                ->value(0)
-                ->placeholder(__('Enter credits amount'))
-                ->help(__('Credits Amount')),
+                Input::make('siteCredit.purchase_amount')
+                    ->title(__('Purchase Amount'))
+                    ->mask([
+                        'alias' => 'currency',
+                        'groupSeparator' => ',',
+                        'digitsOptional' => true,
+                        'allowMinus' => false,
+                        'removeMaskOnSubmit' => true,
+                    ])
+                    ->required()
+                    ->placeholder(__('Enter purchase amount'))
+                    ->readonly($showCreditAttributes)
+                    ->help(__('Purchase Amount')),
 
-            Input::make('siteCredit.used_credits')
-                ->title(__('Used Credits'))
-                ->mask([
-                    'alias' => 'decimal',
-                    'digits' => 2,
-                    'prefix' => '©',
-                    'groupSeparator' => ',',
-                    'digitsOptional' => true,
-                    'allowMinus' => false,
-                    'removeMaskOnSubmit' => true,
-                ])
-                ->placeholder(__('Enter used credits'))
-                ->help(__('Used Credits'))
-                ->readonly()
-                ->canSee($this->query->get('siteCredit.order_id') !== null),
+                Input::make('siteCredit.credits_amount')
+                    ->title(__('Credits Amount'))
+                    ->mask([
+                        'alias' => 'decimal',
+                        'digits' => 2,
+                        'prefix' => '©',
+                        'groupSeparator' => ',',
+                        'digitsOptional' => true,
+                        'allowMinus' => false,
+                        'removeMaskOnSubmit' => true,
+                    ])
+                    ->required()
+                    ->value(0)
+                    ->placeholder(__('Enter credits amount'))
+                    ->readonly()
+                    ->help(__('Credits Amount')),
+            ]),
 
-            Input::make('siteCredit.balance_credits')
-                ->title(__('Balance Credits'))
-                ->mask([
-                    'alias' => 'decimal',
-                    'digits' => 2,
-                    'prefix' => '©',
-                    'groupSeparator' => ',',
-                    'digitsOptional' => true,
-                    'allowMinus' => false,
-                    'removeMaskOnSubmit' => true,
-                ])
-                ->placeholder(__('Enter balance credits'))
-                ->help(__('Balance Credits'))
-                ->canSee($this->query->get('siteCredit.order_id') !== null),
+            Group::make([
+                Input::make('siteCredit.used_credits')
+                    ->title(__('Used Credits'))
+                    ->mask([
+                        'alias' => 'decimal',
+                        'digits' => 2,
+                        'prefix' => '©',
+                        'groupSeparator' => ',',
+                        'digitsOptional' => true,
+                        'allowMinus' => false,
+                        'removeMaskOnSubmit' => true,
+                    ])
+                    ->placeholder(__('Enter used credits'))
+                    ->help(__('Used Credits'))
+                    ->readonly()
+                    ->canSee($showCreditAttributes),
+
+                Input::make('siteCredit.balance_credits')
+                    ->title(__('Balance Credits'))
+                    ->mask([
+                        'alias' => 'decimal',
+                        'digits' => 2,
+                        'prefix' => '©',
+                        'groupSeparator' => ',',
+                        'digitsOptional' => true,
+                        'allowMinus' => false,
+                        'removeMaskOnSubmit' => true,
+                    ])
+                    ->placeholder(__('Enter balance credits'))
+                    ->help(__('Balance Credits'))
+                    ->readonly()
+                    ->canSee($showCreditAttributes),
+            ]),
 
             Input::make('siteCredit.cost_per_credit')
                 ->title(__('Cost Per Credit'))
@@ -121,10 +133,10 @@ class SiteCreditEditLayout extends Rows
                     'allowMinus' => false,
                     'removeMaskOnSubmit' => true,
                 ])
-                ->value(siteConfigs('site_cost_per_credit'))
                 ->placeholder(__('Enter cost per credit'))
                 ->help(__('Cost Per Credit'))
-                ->readonly(),
+                ->readonly()
+                ->canSee($showCreditAttributes),
 
             Group::make([
                 Input::make('siteCredit.alimtalk_credits_cost')
@@ -136,10 +148,10 @@ class SiteCreditEditLayout extends Rows
                         'digitsOptional' => true,
                         'removeMaskOnSubmit' => true,
                     ])
-                    ->value(siteConfigs('site_alimtalk_credits_cost'))
                     ->placeholder(__('Enter Alimtalk credits cost'))
                     ->help(__('Alimtalk Credits Cost'))
-                    ->readonly(),
+                    ->readonly()
+                    ->canSee($showCreditAttributes),
 
                 Input::make('siteCredit.sms_credits_cost')
                     ->title(__('SMS Credits Cost'))
@@ -152,10 +164,10 @@ class SiteCreditEditLayout extends Rows
                         'allowMinus' => false,
                         'removeMaskOnSubmit' => true,
                     ])
-                    ->value(siteConfigs('site_sms_credits_cost'))
                     ->placeholder(__('Enter SMS credits cost'))
                     ->help(__('SMS Credits Cost'))
-                    ->readonly(),
+                    ->readonly()
+                    ->canSee($showCreditAttributes),
 
                 Input::make('siteCredit.lms_credits_cost')
                     ->title(__('LMS Credits Cost'))
@@ -168,10 +180,10 @@ class SiteCreditEditLayout extends Rows
                         'allowMinus' => false,
                         'removeMaskOnSubmit' => true,
                     ])
-                    ->value(siteConfigs('site_lms_credits_cost'))
                     ->placeholder(__('Enter LMS credits cost'))
                     ->help(__('LMS Credits Cost'))
-                    ->readonly(),
+                    ->readonly()
+                    ->canSee($showCreditAttributes),
 
                 Input::make('siteCredit.mms_credits_cost')
                     ->title(__('MMS Credits Cost'))
@@ -184,16 +196,17 @@ class SiteCreditEditLayout extends Rows
                         'allowMinus' => false,
                         'removeMaskOnSubmit' => true,
                     ])
-                    ->value(siteConfigs('site_mms_credits_cost'))
                     ->placeholder(__('Enter MMS credits cost'))
                     ->help(__('MMS Credits Cost'))
-                    ->readonly(),
+                    ->readonly()
+                    ->canSee($showCreditAttributes),
             ]),
 
             DateTimer::make('siteCredit.created_at')
                 ->title(__('Created At'))
                 ->format('Y-m-d H:i:s')
                 ->required()
+                ->disabled()
                 ->value($this->query->get('siteCredit.created_at') ?? now())
                 ->canSee($this->query->get('siteCredit.order_id') !== null),
 
@@ -201,6 +214,7 @@ class SiteCreditEditLayout extends Rows
                 ->title(__('Last Edited At'))
                 ->format('Y-m-d H:i:s')
                 ->required()
+                ->disabled()
                 ->value($this->query->get('siteCredit.updated_at') ?? now())
                 ->canSee($this->query->get('siteCredit.order_id') !== null),
         ];
