@@ -71,7 +71,6 @@ class CreditMessagingServiceProvider extends ServiceProvider
             // register blades
             $this->loadViewsFrom(__DIR__ . '/../Settings/resources/views', 'crm');
             $this->loadJsonTranslationsFrom(__DIR__ . '/../Settings/resources/lang');
-
         }
     }
 
@@ -118,14 +117,22 @@ class CreditMessagingServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register API routes
+     * Register routes
      */
     protected function registerRoutes(): void
     {
+        // Register API routes
         Route::group([
             'middleware' => ['api'],
         ], function () {
             $this->loadRoutesFrom(__DIR__ . '/../../routes/api.php');
+        });
+
+        // Register Web routes
+        Route::group([
+            'middleware' => ['web'],
+        ], function () {
+            $this->loadRoutesFrom(__DIR__ . '/../../routes/web.php');
         });
     }
 

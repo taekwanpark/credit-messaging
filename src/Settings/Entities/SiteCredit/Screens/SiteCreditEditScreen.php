@@ -9,16 +9,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Orchid\Screen\Actions\Button;
-use Orchid\Screen\Fields\Group;
-use Orchid\Screen\Fields\Input;
-use Orchid\Screen\Fields\Matrix;
 use Orchid\Screen\Screen;
 use Orchid\Screen\Sight;
 use Orchid\Support\Color;
 use Orchid\Support\Facades\Toast;
 use Techigh\CreditMessaging\Settings\Entities\SiteCredit\Layouts\SiteCreditEditLayout;
 use Techigh\CreditMessaging\Settings\Entities\SiteCredit\SiteCredit;
-use Techigh\CreditMessaging\Settings\Entities\SitePlan\SitePlan;
 
 class SiteCreditEditScreen extends Screen
 {
@@ -34,6 +30,7 @@ class SiteCreditEditScreen extends Screen
      */
     public function query(SiteCredit $siteCredit): iterable
     {
+
 
         // 테넌트 초기화 되어있는 경우
         if (tenancy()->initialized) {
@@ -73,6 +70,7 @@ class SiteCreditEditScreen extends Screen
         return [
             'siteCredit' => $siteCredit,
             'sitePlan' => $sitePlan,
+            'paymentUrl' => request()->input('paymentUrl'),
         ];
     }
 
@@ -97,7 +95,11 @@ class SiteCreditEditScreen extends Screen
         if (!$this->siteCredit->exists) {
             $commands[] = Button::make(__('Pay'))
                 ->icon('credit-card')
-                ->method('pay');
+                ->method('pay')
+                ->parameters([
+                    'turbo' => true,
+                    'async' => true
+                ]);
         }
 
         return $commands;
@@ -110,14 +112,18 @@ class SiteCreditEditScreen extends Screen
      */
     public function layout(): iterable
     {
-        return [
+        $layouts = [
+
+            OrbitLayout::view('crm::credit-payment')
+                ->canSee($this->siteCredit->exists),
+
+
             OrbitLayout::legend('sitePlan', [
                 Sight::make('sitePlan', __('SitePlan'))->render(function ($sitePlan) {
                     return view('crm::components.site-plan-table', ['options' => $sitePlan]);
                 }),
             ])
                 ->canSee(!$this->siteCredit->exists),
-
             OrbitLayout::block(SiteCreditEditLayout::class)
                 ->title(__('SiteCredit Details'))
                 ->description(__('Edit the details of the dummy entity name.'))
@@ -128,9 +134,14 @@ class SiteCreditEditScreen extends Screen
                         ->method('calculate')
                         ->canSee(!$this->siteCredit->exists)
                 ),
-
         ];
+//
+        // JavaScript for payment window - always include
+//        $layouts[] = OrbitLayout::view('credit-messaging::components.payment-handler');
+
+        return $layouts;
     }
+
 
     /**
      * Define the permissions required to view this screen.
@@ -147,7 +158,7 @@ class SiteCreditEditScreen extends Screen
 
 
     /**
-     * Save the SiteCredit.
+     * Save the SiteCredit and return payment URL for new window.
      *
      * @param \Illuminate\Http\Request $request
      */
@@ -185,9 +196,15 @@ class SiteCreditEditScreen extends Screen
         $siteCredit->fill($request->input('siteCredit'));
         $siteCredit->save();
 
+
         Toast::info(__('SiteCredit was saved.'));
 
-        return redirect()->route('settings.entities.site_credits');
+        $paymentUrl = route('sitecredit.payment', $siteCredit);
+
+        return redirect()->route('settings.entities.site_credits.edit', [
+            'siteCredit' => $siteCredit,
+            'paymentUrl' => $paymentUrl
+        ]);
     }
 
     /**

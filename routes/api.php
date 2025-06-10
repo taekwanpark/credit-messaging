@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Techigh\CreditMessaging\Http\Controllers\WebhookController;
+use Techigh\CreditMessaging\Settings\Entities\SiteCredit\SiteCredit;
 
 /*
 |--------------------------------------------------------------------------
