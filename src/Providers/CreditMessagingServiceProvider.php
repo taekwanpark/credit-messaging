@@ -21,6 +21,10 @@ class CreditMessagingServiceProvider extends ServiceProvider
 
             // Load translations
             $this->loadJsonTranslationsFrom(__DIR__ . '/../../resources/lang');
+            $this->loadJsonTranslationsFrom(__DIR__ . '/../Settings/resources/lang');
+
+            // register blades
+            $this->loadViewsFrom(__DIR__ . '/../Settings/resources/views', 'crm');
 
             // Register core services as singletons
             $this->registerCoreServices();
@@ -68,9 +72,7 @@ class CreditMessagingServiceProvider extends ServiceProvider
             // register Site configs
             $this->registerSiteConfigs();
 
-            // register blades
-            $this->loadViewsFrom(__DIR__ . '/../Settings/resources/views', 'crm');
-            $this->loadJsonTranslationsFrom(__DIR__ . '/../Settings/resources/lang');
+
         }
     }
 

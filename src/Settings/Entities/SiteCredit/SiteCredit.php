@@ -5,7 +5,9 @@ namespace Techigh\CreditMessaging\Settings\Entities\SiteCredit;
 use App\Services\DynamicModel;
 use App\Services\Traits\HasPermissions;
 use App\Services\Traits\SettingMenuItemTrait;
+use App\Settings\Entities\Payment\Payment;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Str;
 use Techigh\CreditMessaging\Settings\Entities\SiteCreditUsage\SiteCreditUsage;
 
@@ -35,11 +37,6 @@ class SiteCredit extends DynamicModel
         return __('Credit Message');
     }
 
-    public function siteCreditUsages(): HasMany
-    {
-        return $this->hasMany(SiteCreditUsage::class);
-    }
-
     public static function generateOrderId(): string
     {
         do {
@@ -47,5 +44,21 @@ class SiteCredit extends DynamicModel
         } while (self::query()->where('order_id', $orderId)->exists());
 
         return $orderId;
+    }
+
+    public function siteCreditUsages(): HasMany
+    {
+        return $this->hasMany(SiteCreditUsage::class);
+    }
+
+    public function payment(): MorphOne
+    {
+        return $this->morphOne(
+            Payment::class,
+            'payable',
+            'payable_type',
+            'payable_id',
+            'uuid'
+        );
     }
 }

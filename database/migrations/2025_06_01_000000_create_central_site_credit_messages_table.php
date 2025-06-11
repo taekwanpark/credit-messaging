@@ -10,21 +10,23 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('site_plans', function (Blueprint $table) {
-            $table->id();
-            $table->uuid()->unique();
-            $table->json('title')->nullable()->comment('title for multi language');
+        if (!Schema::hasTable('site_plans')) {
+            Schema::create('site_plans', function (Blueprint $table) {
+                $table->id();
+                $table->uuid()->unique();
+                $table->json('title')->nullable()->comment('title for multi language');
 
-            $table->decimal('cost_per_credit')->default(config('credit-messaging.default_credit_costs.cost_per_credit'));
-            $table->decimal('alimtalk_credits_cost')->default(config('credit-messaging.default_credit_costs.alimtalk'));
-            $table->decimal('sms_credits_cost')->default(config('credit-messaging.default_credit_costs.sms'));
-            $table->decimal('lms_credits_cost')->default(config('credit-messaging.default_credit_costs.lms'));
-            $table->decimal('mms_credits_cost')->default(config('credit-messaging.default_credit_costs.mms'));
+                $table->decimal('cost_per_credit')->default(config('credit-messaging.default_credit_costs.cost_per_credit'));
+                $table->decimal('alimtalk_credits_cost')->default(config('credit-messaging.default_credit_costs.alimtalk'));
+                $table->decimal('sms_credits_cost')->default(config('credit-messaging.default_credit_costs.sms'));
+                $table->decimal('lms_credits_cost')->default(config('credit-messaging.default_credit_costs.lms'));
+                $table->decimal('mms_credits_cost')->default(config('credit-messaging.default_credit_costs.mms'));
 
-            $table->integer('sort_order')->unsigned()->index();
-            $table->timestamps();
-            $table->softDeletes();
-        });
+                $table->integer('sort_order')->unsigned()->index();
+                $table->timestamps();
+                $table->softDeletes();
+            });
+        }
 
         Schema::table('tenants', function (Blueprint $table) {
             $table->foreignId('site_plan_id')->nullable()->after('data')->constrained('site_plans')->nullOnDelete();

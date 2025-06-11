@@ -17,6 +17,14 @@ Route::middleware([
     'universal',
     'tenancy',
     'frontend'
-])->get('/settings/site-credit/payment/{siteCredit}', [PaymentController::class, 'show'])
-    ->name('sitecredit.payment')
-    ->where('siteCredit', '[0-9]+');
+])->group(function () {
+    Route::get('/site-credit/payment', [PaymentController::class, 'create'])->name('site-credit.payment');
+
+    Route::post('/site-credit/store', [PaymentController::class, 'store'])->name('site-credit.store');
+
+    Route::post('/site-credit/destroy/{orderId}', [PaymentController::class, 'destroy'])->name('site-credit.destroy');
+
+    Route::get('/site-credit/payment/success', [PaymentController::class, 'success'])->name('site-credit.payments.success');
+
+    Route::get('/site-credit/payment/fail', [PaymentController::class, 'fail'])->name('site-credit.payments.fail');
+});

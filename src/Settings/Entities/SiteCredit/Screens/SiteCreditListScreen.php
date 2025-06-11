@@ -21,7 +21,7 @@ class SiteCreditListScreen extends Screen
     public function query(): iterable
     {
         return [
-            'siteCredits' => SiteCredit::filters()->defaultSort('id')->paginate(),
+            'siteCredits' => SiteCredit::filters()->defaultSort('created_at', 'desc')->paginate(),
         ];
     }
 

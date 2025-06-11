@@ -55,73 +55,68 @@ class SiteCreditEditLayout extends Rows
                 ->required()
                 ->canSee($showCreditAttributes),
 
-            Group::make([
+            Input::make('siteCredit.purchase_amount')
+                ->title(__('Purchase Amount'))
+                ->mask([
+                    'alias' => 'currency',
+                    'groupSeparator' => ',',
+                    'digitsOptional' => true,
+                    'allowMinus' => false,
+                    'removeMaskOnSubmit' => true,
+                ])
+                ->required()
+                ->placeholder(__('Enter purchase amount'))
+                ->readonly($showCreditAttributes)
+                ->help(__('Purchase Amount')),
 
-                Input::make('siteCredit.purchase_amount')
-                    ->title(__('Purchase Amount'))
-                    ->mask([
-                        'alias' => 'currency',
-                        'groupSeparator' => ',',
-                        'digitsOptional' => true,
-                        'allowMinus' => false,
-                        'removeMaskOnSubmit' => true,
-                    ])
-                    ->required()
-                    ->placeholder(__('Enter purchase amount'))
-                    ->readonly($showCreditAttributes)
-                    ->help(__('Purchase Amount')),
+            Input::make('siteCredit.credits_amount')
+                ->title(__('Credits Amount'))
+                ->mask([
+                    'alias' => 'decimal',
+                    'digits' => 2,
+                    'prefix' => '©',
+                    'groupSeparator' => ',',
+                    'digitsOptional' => true,
+                    'allowMinus' => false,
+                    'removeMaskOnSubmit' => true,
+                ])
+                ->required()
+                ->value(0)
+                ->placeholder(__('Enter credits amount'))
+                ->readonly()
+                ->help(__('Credits Amount')),
 
-                Input::make('siteCredit.credits_amount')
-                    ->title(__('Credits Amount'))
-                    ->mask([
-                        'alias' => 'decimal',
-                        'digits' => 2,
-                        'prefix' => '©',
-                        'groupSeparator' => ',',
-                        'digitsOptional' => true,
-                        'allowMinus' => false,
-                        'removeMaskOnSubmit' => true,
-                    ])
-                    ->required()
-                    ->value(0)
-                    ->placeholder(__('Enter credits amount'))
-                    ->readonly()
-                    ->help(__('Credits Amount')),
-            ]),
+            Input::make('siteCredit.used_credits')
+                ->title(__('Used Credits'))
+                ->mask([
+                    'alias' => 'decimal',
+                    'digits' => 2,
+                    'prefix' => '©',
+                    'groupSeparator' => ',',
+                    'digitsOptional' => true,
+                    'allowMinus' => false,
+                    'removeMaskOnSubmit' => true,
+                ])
+                ->placeholder(__('Enter used credits'))
+                ->help(__('Used Credits'))
+                ->readonly()
+                ->canSee($showCreditAttributes),
 
-            Group::make([
-                Input::make('siteCredit.used_credits')
-                    ->title(__('Used Credits'))
-                    ->mask([
-                        'alias' => 'decimal',
-                        'digits' => 2,
-                        'prefix' => '©',
-                        'groupSeparator' => ',',
-                        'digitsOptional' => true,
-                        'allowMinus' => false,
-                        'removeMaskOnSubmit' => true,
-                    ])
-                    ->placeholder(__('Enter used credits'))
-                    ->help(__('Used Credits'))
-                    ->readonly()
-                    ->canSee($showCreditAttributes),
-
-                Input::make('siteCredit.balance_credits')
-                    ->title(__('Balance Credits'))
-                    ->mask([
-                        'alias' => 'decimal',
-                        'digits' => 2,
-                        'prefix' => '©',
-                        'groupSeparator' => ',',
-                        'digitsOptional' => true,
-                        'allowMinus' => false,
-                        'removeMaskOnSubmit' => true,
-                    ])
-                    ->placeholder(__('Enter balance credits'))
-                    ->help(__('Balance Credits'))
-                    ->readonly()
-                    ->canSee($showCreditAttributes),
-            ]),
+            Input::make('siteCredit.balance_credits')
+                ->title(__('Balance Credits'))
+                ->mask([
+                    'alias' => 'decimal',
+                    'digits' => 2,
+                    'prefix' => '©',
+                    'groupSeparator' => ',',
+                    'digitsOptional' => true,
+                    'allowMinus' => false,
+                    'removeMaskOnSubmit' => true,
+                ])
+                ->placeholder(__('Enter balance credits'))
+                ->help(__('Balance Credits'))
+                ->readonly()
+                ->canSee($showCreditAttributes),
 
             Input::make('siteCredit.cost_per_credit')
                 ->title(__('Cost Per Credit'))
