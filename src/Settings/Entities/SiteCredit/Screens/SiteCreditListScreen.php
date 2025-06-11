@@ -3,10 +3,12 @@
 namespace Techigh\CreditMessaging\Settings\Entities\SiteCredit\Screens;
 
 use App\Settings\Entities\User\User;
+use App\Settings\Extends\OrbitLayout;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Orchid\Screen\Actions\Link;
 use Orchid\Screen\Screen;
+use Orchid\Screen\Sight;
 use Orchid\Support\Facades\Toast;
 use Techigh\CreditMessaging\Settings\Entities\SiteCredit\Layouts\SiteCreditListLayout;
 use Techigh\CreditMessaging\Settings\Entities\SiteCredit\SiteCredit;
@@ -65,7 +67,33 @@ class SiteCreditListScreen extends Screen
      */
     public function layout(): iterable
     {
+        $availableSiteCreditsQuery = SiteCredit::query()
+            ->where('status', 'SUCCESS')
+            ->where('balance_credits', '>', 0);
+
+        $availableAlimtalkCount = 0;
+        $availableSiteCreditsQuery->each(function (SiteCredit $siteCredit) use (&$availableAlimtalkCount) {
+            $balance = $siteCredit->balance_credits;
+            $creditCost = $siteCredit->alimtalk_credits_cost ?? 0;
+
+            if ($creditCost > 0) $sendableCount = $balance / $creditCost;
+            else $sendableCount = 0;
+
+            $availableAlimtalkCount += $sendableCount;
+        });
+
+        // 숫자 내림 처리
+        $availableAlimtalkCount = floor($availableAlimtalkCount);
+        $balanceCredits = floor($availableSiteCreditsQuery->sum('balance_credits'));
+        $message = sprintf('%s: %s, %s: %s', __('Balance Credit'), number_format($balanceCredits), __('Available Count'), number_format($availableAlimtalkCount));
         return [
+            OrbitLayout::view('crm::components.announcement', [
+                'title' => __('Site Credit Stats'),
+                'messages' => [
+                    $message,
+                ],
+                'alert' => false
+            ]),
             SiteCreditListLayout::class,
         ];
     }

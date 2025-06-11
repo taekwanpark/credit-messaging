@@ -6,6 +6,7 @@ use App\Services\DynamicModel;
 use App\Services\Traits\HasPermissions;
 use App\Services\Traits\SettingMenuItemTrait;
 use App\Settings\Entities\Payment\Payment;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Str;
@@ -18,6 +19,10 @@ class SiteCredit extends DynamicModel
 {
     use SettingMenuItemTrait;
     use HasPermissions;
+
+    protected $appends = [
+        'available_alimtalk_count'
+    ];
 
     protected static function booted(): void
     {
@@ -44,6 +49,16 @@ class SiteCredit extends DynamicModel
         } while (self::query()->where('order_id', $orderId)->exists());
 
         return $orderId;
+    }
+
+    public function availableAlimtalkCount(): Attribute
+    {
+        $cost = $this->alimtalk_credits_cost;
+        $balance = $this->balance_credits;
+        $count = $cost > 0 ? floor($balance / $cost) : 0;
+        return Attribute::get(function () use ($count) {
+            return $count;
+        });
     }
 
     public function siteCreditUsages(): HasMany

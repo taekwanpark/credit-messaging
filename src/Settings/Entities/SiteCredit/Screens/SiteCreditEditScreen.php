@@ -102,7 +102,6 @@ class SiteCreditEditScreen extends Screen
      */
     public function layout(): iterable
     {
-
         return [
             OrbitLayout::legend('sitePlan', [
                 Sight::make('sitePlan', __('SitePlan'))->render(function ($sitePlan) {
