@@ -11,6 +11,8 @@ return [
     |
     */
 
+    'route_mode' => env('CREDIT_MESSAGING_ROUTE_MODE', 'none'),
+
     /*
     |--------------------------------------------------------------------------
     | 메시지 서비스 API 설정
@@ -43,7 +45,7 @@ return [
         'timeout' => env('WEBHOOK_TIMEOUT', 30),
         'retry_attempts' => env('WEBHOOK_RETRY_ATTEMPTS', 3),
         'retry_delay' => env('WEBHOOK_RETRY_DELAY', 300), // seconds
-        
+
         'verify_signature' => env('WEBHOOK_VERIFY_SIGNATURE', true),
         'log_errors' => env('WEBHOOK_LOG_ERRORS', true),
     ],

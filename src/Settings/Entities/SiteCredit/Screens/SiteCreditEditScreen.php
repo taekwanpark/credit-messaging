@@ -30,42 +30,47 @@ class SiteCreditEditScreen extends Screen
      */
     public function query(SiteCredit $siteCredit): iterable
     {
-        // 테넌트 초기화 되어있는 경우
-        if (tenancy()->initialized) {
-            /** @var Tenant $tenant */
-            $tenant = tenancy()->tenant;
-            tenancy()->central(function () use ($tenant, &$sitePlan) {
-                // 테넌트 컨텍스트에서 실행
-                if ($tenant) {
-                    $sitePlan = $tenant->sitePlan;
-                    $sitePlan = [
-                        'title' => $sitePlan->title,
-                        'cost_per_credit' => $sitePlan->cost_per_credit,
-                        'alimtalk_credits_cost' => $sitePlan->alimtalk_credits_cost,
-                        'sms_credits_cost' => $sitePlan->sms_credits_cost,
-                        'lms_credits_cost' => $sitePlan->lms_credits_cost,
-                        'mms_credits_cost' => $sitePlan->mms_credits_cost,
-                    ];
-                }
-            });
-        } else {
-            $sitePlan = [
-                'title' => __('Site Plan'),
-                'cost_per_credit' => siteConfigs('site_cost_per_credit', config('credit-messaging.default_credit_costs.cost_per_credit')),
-                'alimtalk_credits_cost' => siteConfigs('site_alimtalk_credits_cost', config('credit-messaging.default_credit_costs.alimtalk')),
-                'sms_credits_cost' => siteConfigs('site_sms_credits_cost', config('credit-messaging.default_credit_costs.sms')),
-                'lms_credits_cost' => siteConfigs('site_lms_credits_cost', config('credit-messaging.default_credit_costs.lms')),
-                'mms_credits_cost' => siteConfigs('site_mms_credits_cost', config('credit-messaging.default_credit_costs.mms')),
-            ];
-        }
+        $sitePlan = [];
+        if (!$siteCredit->exists) {
+            // 테넌트 초기화 되어있는 경우
+            if (tenancy()->initialized) {
+                /** @var Tenant $tenant */
+                $tenant = tenancy()->tenant;
+                tenancy()->central(function () use ($tenant, &$sitePlan) {
+                    // 테넌트 컨텍스트에서 실행
+                    if ($tenant) {
+                        $sitePlan = $tenant->sitePlan;
+                        if ($sitePlan) {
+                            $sitePlan = [
+                                'title' => $sitePlan->title,
+                                'cost_per_credit' => $sitePlan->cost_per_credit,
+                                'alimtalk_credits_cost' => $sitePlan->alimtalk_credits_cost,
+                                'sms_credits_cost' => $sitePlan->sms_credits_cost,
+                                'lms_credits_cost' => $sitePlan->lms_credits_cost,
+                                'mms_credits_cost' => $sitePlan->mms_credits_cost,
+                            ];
+                        }
+                    }
+                });
+            } else {
+                $sitePlan = [
+                    'title' => __('Site Plan'),
+                    'cost_per_credit' => siteConfigs('site_cost_per_credit', config('credit-messaging.default_credit_costs.cost_per_credit')),
+                    'alimtalk_credits_cost' => siteConfigs('site_alimtalk_credits_cost', config('credit-messaging.default_credit_costs.alimtalk')),
+                    'sms_credits_cost' => siteConfigs('site_sms_credits_cost', config('credit-messaging.default_credit_costs.sms')),
+                    'lms_credits_cost' => siteConfigs('site_lms_credits_cost', config('credit-messaging.default_credit_costs.lms')),
+                    'mms_credits_cost' => siteConfigs('site_mms_credits_cost', config('credit-messaging.default_credit_costs.mms')),
+                ];
+            }
+            $this->sitePlan = $sitePlan;
 
-        $purchaseAmount = request()->input('purchaseAmount') ?? 0;
-        if ($purchaseAmount !== 0) {
-            $siteCredit->setAttribute('purchase_amount', (int)$purchaseAmount);
-            $creditAmount = floor($purchaseAmount / $sitePlan['cost_per_credit']);
-            $siteCredit->setAttribute('credits_amount', $creditAmount);
+            $purchaseAmount = request()->input('purchaseAmount') ?? 0;
+            if ($purchaseAmount !== 0) {
+                $siteCredit->setAttribute('purchase_amount', (int)$purchaseAmount);
+                $creditAmount = floor($purchaseAmount / $sitePlan['cost_per_credit']);
+                $siteCredit->setAttribute('credits_amount', $creditAmount);
+            }
         }
-        $this->sitePlan = $sitePlan;
         return [
             'siteCredit' => $siteCredit,
             'sitePlan' => $sitePlan,
@@ -103,11 +108,7 @@ class SiteCreditEditScreen extends Screen
     public function layout(): iterable
     {
         return [
-            OrbitLayout::legend('sitePlan', [
-                Sight::make('sitePlan', __('SitePlan'))->render(function ($sitePlan) {
-                    return view('crm::components.site-plan-table', ['options' => $sitePlan]);
-                }),
-            ])
+            OrbitLayout::view('crm::components.site-plan-table', ['sitePlan' => $this->sitePlan])
                 ->canSee(!$this->siteCredit->exists),
 
             OrbitLayout::block(SiteCreditEditLayout::class)
@@ -121,7 +122,8 @@ class SiteCreditEditScreen extends Screen
                             'turbo' => true,
                             'async' => true
                         ])->canSee(!$this->siteCredit->exists),
-                ]),
+                ])
+                ->canSee($this->siteCredit->exists || (!$this->siteCredit->exists && !empty($this->sitePlan))),
 
             OrbitLayout::view('crm::credit-payment')
                 ->canSee(

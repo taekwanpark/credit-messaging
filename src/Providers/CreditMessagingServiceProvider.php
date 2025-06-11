@@ -15,9 +15,9 @@ class CreditMessagingServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        if (config('smpp-provider.use_credit_messaging', false) === true) {
-            // Merge configuration
-            $this->mergeConfigFrom(__DIR__ . '/../../config/credit-messaging.php', 'credit-messaging');
+        // Merge configuration
+        $this->mergeConfigFrom(__DIR__ . '/../../config/credit-messaging.php', 'credit-messaging');
+        if (config('credit-messaging.route_mode', 'none') !== 'none') {
 
             // Load translations
             $this->loadJsonTranslationsFrom(__DIR__ . '/../../resources/lang');
@@ -52,7 +52,7 @@ class CreditMessagingServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        if (config('smpp-provider.use_credit_messaging', false) === true) {
+        if (config('credit-messaging.route_mode', 'none') !== 'none') {
 
             // Register commands first (before other boot operations)
             $this->registerCommands();
@@ -70,9 +70,9 @@ class CreditMessagingServiceProvider extends ServiceProvider
             $this->registerRoutes();
 
             // register Site configs
-            $this->registerSiteConfigs();
-
-
+            if (config('credit-messaging.route_mode', 'none') === 'central') {
+                $this->registerSiteConfigs();
+            }
         }
     }
 

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Str;
+use Stancl\Tenancy\Enums\RouteMode;
 use Techigh\CreditMessaging\Settings\Entities\SiteCreditUsage\SiteCreditUsage;
 
 /**
@@ -23,6 +24,7 @@ class SiteCredit extends DynamicModel
     protected $appends = [
         'available_alimtalk_count'
     ];
+
 
     protected static function booted(): void
     {
@@ -40,6 +42,17 @@ class SiteCredit extends DynamicModel
     public static function getMenuSection(): string
     {
         return __('Credit Message');
+    }
+
+    public static function menuItemRouteMode(): RouteMode
+    {
+        if (config('credit-messaging.route_mode', 'none') === 'tenant') {
+            return RouteMode::TENANT;
+        } else if (config('credit-messaging.route_mode', 'none') === 'central') {
+            return RouteMode::CENTRAL;
+        } else {
+            return RouteMode::UNIVERSAL;
+        }
     }
 
     public static function generateOrderId(): string
